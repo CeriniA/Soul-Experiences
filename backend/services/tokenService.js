@@ -9,18 +9,30 @@ import emailService from './emailService.js';
 class TokenService {
   
   /**
-   * Generar tokens para participantes de un retiro
-   * @param {string} retreatId - ID del retiro
-   * @param {number} quantity - Cantidad de tokens a generar (opcional)
+   * Generar tokens para un retiro completado
+   * Genera tokens automáticamente para TODOS los participantes confirmados que no tengan token
+   * @param {string} retreatId - ID del retiro (debe estar en estado 'completed')
    * @returns {Object} Tokens generados
    */
-  async generateTokensForRetreat(retreatId, quantity = null) {
+  async generateTokensForRetreat(retreatId) {
     try {
       // Verificar que el retiro existe
       const retreat = await Retreat.findById(retreatId);
       if (!retreat) {
         const error = new Error('Retiro no encontrado');
         error.statusCode = 404;
+        throw error;
+      }
+
+      // Validar que el retiro esté completado
+      if (retreat.status !== 'completed') {
+        const error = new Error('Solo se pueden generar tokens para retiros completados');
+        error.statusCode = 400;
+        error.info = {
+          currentStatus: retreat.status,
+          requiredStatus: 'completed',
+          message: 'El retiro debe estar en estado "completed" para generar tokens de testimonios'
+        };
         throw error;
       }
 
@@ -55,13 +67,9 @@ class TokenService {
         throw error;
       }
 
-      // Determinar cuántos tokens generar
-      let participantsToGenerate = participantsWithoutToken;
-      
-      if (quantity && quantity > 0) {
-        // Si se especifica cantidad, tomar solo esa cantidad de participantes
-        participantsToGenerate = participantsWithoutToken.slice(0, quantity);
-      }
+      // Generar tokens para TODOS los participantes sin token
+      // (Se eliminó el parámetro quantity - siempre genera para todos)
+      const participantsToGenerate = participantsWithoutToken;
 
       // Preparar datos de participantes
       const participants = participantsToGenerate.map(lead => ({

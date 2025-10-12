@@ -1,14 +1,12 @@
 import tokenService from '../services/tokenService.js';
 
-// @desc    Generar tokens para participantes de un retiro
+// @desc    Generar tokens para TODOS los participantes confirmados de un retiro completado
 // @route   POST /api/tokens/generate/:retreatId
 // @access  Private (Admin)
 export const generateTokensForRetreat = async (req, res) => {
   try {
-    const result = await tokenService.generateTokensForRetreat(
-      req.params.retreatId,
-      req.body.quantity
-    );
+    // Se eliminó el parámetro quantity - siempre genera para todos los participantes
+    const result = await tokenService.generateTokensForRetreat(req.params.retreatId);
     res.json(result);
   } catch (error) {
     const statusCode = error.statusCode || 500;
