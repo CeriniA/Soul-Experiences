@@ -133,11 +133,7 @@ El proyecto implementa una **arquitectura de capas** que separa claramente las r
   accommodationDetails: String,     // Detalles de alojamiento
   
   // Políticas
-  cancellationPolicy: String,
-  
-  // Estadísticas
-  inquiryCount: Number,             // Contador de consultas
-  viewCount: Number                 // Contador de vistas
+  cancellationPolicy: String
 }
 ```
 
@@ -301,7 +297,6 @@ npm run dev
 - `GET /api/retreats/active/current` - Obtener retiro activo para hero
 - `GET /api/retreats/past` - Obtener retiros pasados (máx 6)
 - `GET /api/retreats/hero-data` - Obtener datos para hero
-- `POST /api/retreats/:id/inquiry` - Incrementar contador de consultas
 
 **Protegidos (Admin):**
 - `POST /api/retreats` - Crear nuevo retiro
@@ -403,7 +398,6 @@ npm run dev
 - **Campos extensos**: 20+ campos incluyendo información detallada
 - **Validaciones**: Fechas, precios, disponibilidad, imágenes
 - **Endpoints públicos y protegidos**
-- **Estadísticas**: Contador de consultas y vistas
 
 #### Entidad Relacionada: Testimonios (Categorías)
 - **Relación con Retiros**: Referencia mediante ObjectId

@@ -177,13 +177,6 @@ const retreatSchema = new mongoose.Schema({
     trim: true
   },
   
-  // Contador de consultas
-  inquiryCount: {
-    type: Number,
-    default: 0,
-    min: [0, 'El contador no puede ser negativo']
-  },
-  
   // SEO
   slug: {
     type: String,

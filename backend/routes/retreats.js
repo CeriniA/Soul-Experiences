@@ -7,8 +7,7 @@ import {
   deleteRetreat,
   getActiveRetreat,
   getPastRetreats,
-  getHeroData,
-  incrementInquiry
+  getHeroData
 } from '../controllers/retreatController.js';
 import { protect, authorize, optionalAuth } from '../middleware/auth.js';
 
@@ -20,7 +19,6 @@ router.get('/active/current', getActiveRetreat);
 router.get('/past', getPastRetreats);
 router.get('/hero-data', getHeroData);
 router.get('/:id', getRetreat);
-router.post('/:id/inquiry', incrementInquiry);
 
 // RUTA TEMPORAL DE PRUEBA (SIN AUTENTICACIÓN)
 router.put('/test/:id', (req, res, next) => {

@@ -200,9 +200,7 @@ Viviremos una experiencia transformadora en la montaña, rodeados de naturaleza,
       status: 'active',
       showInHero: true,
 
-      whatsappNumber: '+5493512345678',
-
-      inquiryCount: 0
+      whatsappNumber: '+5493512345678'
     });
 
     console.log('✅ Retiro creado exitosamente\n');

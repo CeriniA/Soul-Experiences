@@ -365,37 +365,6 @@ class RetreatService {
   }
 
   /**
-   * Incrementar contador de consultas de un retiro
-   * @param {string} id - ID del retiro
-   * @returns {Object} Confirmación de incremento
-   */
-  async incrementInquiry(id) {
-    try {
-      const retreat = await Retreat.findByIdAndUpdate(
-        id,
-        { $inc: { inquiryCount: 1 } },
-        { new: true }
-      );
-
-      if (!retreat) {
-        const error = new Error('Retiro no encontrado');
-        error.statusCode = 404;
-        throw error;
-      }
-
-      return {
-        success: true,
-        message: 'Consulta registrada'
-      };
-    } catch (error) {
-      if (error.statusCode) {
-        throw error;
-      }
-      throw new Error(`Error al registrar consulta: ${error.message}`);
-    }
-  }
-
-  /**
    * Validar y obtener el estado sugerido para un retiro según sus fechas
    * @param {Object} retreat - Retiro a validar
    * @returns {Object} Información sobre el estado actual y sugerido

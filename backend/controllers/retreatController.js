@@ -177,19 +177,3 @@ export const getHeroData = async (req, res) => {
   }
 };
 
-// @desc    Incrementar contador de consultas
-// @route   POST /api/retreats/:id/inquiry
-// @access  Public
-export const incrementInquiry = async (req, res) => {
-  try {
-    const result = await retreatService.incrementInquiry(req.params.id);
-    res.json(result);
-  } catch (error) {
-    const statusCode = error.statusCode || 500;
-    res.status(statusCode).json({
-      success: false,
-      error: statusCode === 404 ? 'Retiro no encontrado' : 'Error al registrar consulta',
-      message: error.message
-    });
-  }
-};
