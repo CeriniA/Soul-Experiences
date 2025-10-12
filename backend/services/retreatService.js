@@ -164,6 +164,30 @@ class RetreatService {
    */
   async updateRetreat(id, updateData) {
     try {
+      console.log('🔄 Actualizando retiro:', id);
+      console.log('📦 Datos recibidos:', JSON.stringify(updateData, null, 2));
+      
+      // Limpiar datos: convertir strings vacíos en undefined para campos numéricos
+      const cleanedData = { ...updateData };
+      
+      // Limpiar campos numéricos que pueden venir como strings vacíos
+      if (cleanedData.price === '' || cleanedData.price === null) delete cleanedData.price;
+      if (cleanedData.maxParticipants === '' || cleanedData.maxParticipants === null) delete cleanedData.maxParticipants;
+      if (cleanedData.heroImageIndex === '' || cleanedData.heroImageIndex === null) delete cleanedData.heroImageIndex;
+      
+      // Limpiar objetos anidados vacíos
+      if (cleanedData.location && Object.keys(cleanedData.location).length === 0) {
+        delete cleanedData.location;
+      }
+      if (cleanedData.foodInfo && Object.keys(cleanedData.foodInfo).length === 0) {
+        delete cleanedData.foodInfo;
+      }
+      if (cleanedData.policies && Object.keys(cleanedData.policies).length === 0) {
+        delete cleanedData.policies;
+      }
+      
+      console.log('🧹 Datos limpiados:', JSON.stringify(cleanedData, null, 2));
+      
       // Obtener retiro actual para validar con todos los datos
       const currentRetreat = await Retreat.findById(id);
       if (!currentRetreat) {
@@ -173,7 +197,7 @@ class RetreatService {
       }
 
       // Combinar datos actuales con actualizaciones para validación completa
-      const mergedData = { ...currentRetreat.toObject(), ...updateData };
+      const mergedData = { ...currentRetreat.toObject(), ...cleanedData };
       
       // Validación manual de fechas si se actualizan
       if (mergedData.startDate && mergedData.endDate) {
@@ -193,7 +217,7 @@ class RetreatService {
       
       const retreat = await Retreat.findByIdAndUpdate(
         id,
-        updateData,
+        cleanedData,  // Usar datos limpiados en lugar de updateData
         {
           new: true,
           runValidators: false  // Usamos validación manual
@@ -220,7 +244,13 @@ class RetreatService {
       }
 
       if (error.name === 'CastError') {
-        const castError = new Error('Error de formato de datos');
+        console.error('❌ CastError al actualizar retiro:', {
+          path: error.path,
+          value: error.value,
+          kind: error.kind,
+          message: error.message
+        });
+        const castError = new Error(`Error de formato en el campo "${error.path}": valor "${error.value}" no es válido`);
         castError.statusCode = 400;
         castError.path = error.path;
         castError.value = error.value;
