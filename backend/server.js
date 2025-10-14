@@ -25,8 +25,35 @@ validateConfig();
 const app = express();
 const PORT = DATABASE_CONFIG.PORT;
 
+// Configuración de CSP
+const cspConfig = {
+  directives: {
+    defaultSrc: ["'self'"],
+    scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+    styleSrc: ["'self'", "'unsafe-inline'"],
+    imgSrc: ["'self'", "data:", "https: http:"],
+    connectSrc: ["'self'", "https://*.tiles.mapbox.com", "https://api.mapbox.com"],
+    fontSrc: ["'self'"],
+    objectSrc: ["'none'"],
+    upgradeInsecureRequests: [],
+  },
+};
+
 // Middlewares
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: cspConfig,
+  crossOriginEmbedderPolicy: true,
+  crossOriginOpenerPolicy: true,
+  crossOriginResourcePolicy: { policy: "same-site" },
+  dnsPrefetchControl: true,
+  frameguard: { action: 'deny' },
+  hidePoweredBy: true,
+  hsts: true,
+  ieNoOpen: true,
+  noSniff: true,
+  referrerPolicy: { policy: 'same-origin' },
+  xssFilter: true,
+}));
 app.use(cors());
 app.use(morgan('combined'));
 app.use(express.json());
