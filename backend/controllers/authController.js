@@ -1,4 +1,5 @@
 import userService from '../services/userService.js';
+import { APP_CONFIG } from '../config/database.js';
 
 // @desc    Login de usuario
 // @route   POST /api/auth/login
@@ -7,6 +8,18 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
     const result = await userService.authenticateUser(email, password);
+    // Establecer cookie HttpOnly de primer partido con el token
+    const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+    // Opciones de cookie parametrizadas por variables de entorno
+    const cookieOptions = {
+      httpOnly: true,
+      secure: APP_CONFIG.COOKIE_SECURE,
+      sameSite: APP_CONFIG.COOKIE_SAMESITE,
+      path: '/',
+      maxAge: thirtyDaysMs,
+    };
+    res.cookie('token', result.token, cookieOptions);
+    // Devolver también el body previo para compatibilidad con el frontend actual
     res.json(result);
   } catch (error) {
     const statusCode = error.statusCode || 500;
@@ -43,6 +56,13 @@ export const getMe = async (req, res) => {
 export const logout = async (req, res) => {
   try {
     const result = await userService.logoutUser(req.user.id);
+    // Limpiar la cookie usando las mismas opciones relevantes
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: APP_CONFIG.COOKIE_SECURE,
+      sameSite: APP_CONFIG.COOKIE_SAMESITE,
+      path: '/',
+    });
     res.json(result);
   } catch (error) {
     res.status(500).json({

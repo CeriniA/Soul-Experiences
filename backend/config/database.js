@@ -23,6 +23,13 @@ export const AUTH_CONFIG = {
   JWT_EXPIRE: process.env.JWT_EXPIRE || '30d'
 };
 
+export const APP_CONFIG = {
+  FRONTEND_ORIGIN: process.env.FRONTEND_ORIGIN || 'https://clariweb.onrender.com',
+  BACKEND_ORIGIN: process.env.BACKEND_ORIGIN || 'https://soul-experiences.onrender.com',
+  COOKIE_SAMESITE: process.env.COOKIE_SAMESITE || (process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
+  COOKIE_SECURE: process.env.COOKIE_SECURE ? process.env.COOKIE_SECURE === 'true' : process.env.NODE_ENV === 'production'
+};
+
 // Función para validar configuración crítica
 export const validateConfig = () => {
   const requiredVars = ['MONGODB_URI'];

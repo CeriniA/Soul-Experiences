@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 
 // Importar configuración
-import { DATABASE_CONFIG, validateConfig } from './config/database.js';
+import { DATABASE_CONFIG, validateConfig, APP_CONFIG } from './config/database.js';
 
 // Importar rutas
 import testRoutes from './routes/test.js';
@@ -24,6 +24,9 @@ validateConfig();
 
 const app = express();
 const PORT = DATABASE_CONFIG.PORT;
+
+// Necesario detrás de proxies (Render/Heroku) para que req.secure sea correcto y cookies Secure funcionen
+app.set('trust proxy', 1);
 
 // Configuración de CSP
 const cspConfig = {
@@ -75,7 +78,11 @@ app.use(helmet({
   referrerPolicy: { policy: 'same-origin' },
   xssFilter: true,
 }));
-app.use(cors());
+// Configurar CORS para cookies (parametrizado)
+app.use(cors({
+  origin: APP_CONFIG.FRONTEND_ORIGIN,
+  credentials: true,
+}));
 app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

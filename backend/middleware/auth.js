@@ -1,19 +1,42 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
+// Extraer token desde Authorization Bearer o cookie 'token'
+function extractToken(req) {
+  // 1) Header Authorization: Bearer <token>
+  const auth = req.headers.authorization || '';
+  if (auth.toLowerCase().startsWith('bearer ')) {
+    const parts = auth.split(' ');
+    if (parts.length === 2 && parts[1]) return parts[1].trim();
+  }
+
+  // 2) Cookie 'token'
+  const rawCookie = req.headers.cookie || '';
+  if (rawCookie) {
+    // Buscar par token=...
+    const pairs = rawCookie.split(';');
+    for (const pair of pairs) {
+      const idx = pair.indexOf('=');
+      if (idx > -1) {
+        const key = pair.slice(0, idx).trim();
+        const val = pair.slice(idx + 1);
+        if (key === 'token') {
+          try { return decodeURIComponent(val || ''); } catch { return val || ''; }
+        }
+      }
+    }
+  }
+
+  return undefined;
+}
+
 // Middleware para verificar token JWT
 export const protect = async (req, res, next) => {
   try {
     console.log('🔐 PROTECT MIDDLEWARE - Método:', req.method, 'URL:', req.url);
     console.log('🔑 Authorization header:', req.headers.authorization);
     
-    let token;
-
-    // Verificar si el token existe en el header Authorization
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-      token = req.headers.authorization.split(' ')[1];
-      console.log('✅ Token encontrado');
-    }
+    const token = extractToken(req);
 
     if (!token) {
       console.log('❌ No token found');
@@ -73,14 +96,7 @@ export const optionalAuth = async (req, res, next) => {
     console.log('🔓 OPTIONAL AUTH - URL:', req.url);
     console.log('🔑 Authorization header:', req.headers.authorization);
     
-    let token;
-
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-      token = req.headers.authorization.split(' ')[1];
-      console.log('✅ Token encontrado en optionalAuth');
-    } else {
-      console.log('❌ No hay token en optionalAuth');
-    }
+    const token = extractToken(req);
 
     if (token) {
       try {
