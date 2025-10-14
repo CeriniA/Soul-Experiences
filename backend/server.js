@@ -46,7 +46,16 @@ app.use(helmet({
   crossOriginOpenerPolicy: { policy: 'same-origin' },
   crossOriginResourcePolicy: { policy: 'same-site' },
   dnsPrefetchControl: { allow: false },
-  frameguard: { action: 'deny' },
+  // Configuración mejorada de frameguard
+  frameguard: { 
+    action: 'deny',
+    domain: 'none'  // Previte que la página sea embebida en cualquier sitio
+  },
+  // Configuración adicional de seguridad para iframes
+  contentSecurityPolicy: {
+    ...cspConfig,
+    frameAncestors: ["'none'"],  // Previte que la página sea embebida en iframes
+  },
   hidePoweredBy: true,
   hsts: { maxAge: 15552000, includeSubDomains: true },
   ieNoOpen: true,
