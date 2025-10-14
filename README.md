@@ -14,12 +14,12 @@ Soul Experiences es una plataforma web completa para la gestión y promoción de
 
 - **Frontend**: React + Vite + React Router + Bootstrap
 - **Backend**: Node.js + Express + MongoDB (Mongoose)
-- **Autenticación**: JWT (JSON Web Tokens) + Context API
+- **Autenticación**: JWT con Cookies HttpOnly + Context API
 - **Encriptación**: bcrypt para contraseñas
 - **Imágenes**: Cloudinary (upload y optimización automática)
 - **UI/UX**: React Icons, Swiper, Animaciones CSS personalizadas
 - **Tipografía**: Roca Two (títulos), Montserrat (cuerpo)
-- **Seguridad**: CORS, Helmet, Variables de entorno, Protected Routes
+- **Seguridad**: CORS, Helmet, Variables de entorno, Cookies HttpOnly (SameSite/secure), Protected Routes
 
 ## 🏗️ Arquitectura del Proyecto
 
@@ -201,11 +201,12 @@ El proyecto implementa una **arquitectura de capas** que separa claramente las r
 ```javascript
 {
   token: String,          // Token único
-  retreat: ObjectId,      // Referencia a Retreat
-  participantEmail: String,
+  email: String,          // Email del participante
   participantName: String,
-  expiresAt: Date,
-  used: Boolean
+  retreat: ObjectId,      // Referencia a Retreat
+  isUsed: Boolean,        // Estado del token
+  usedAt: Date,           // Fecha de uso (si aplica)
+  expiresAt: Date         // Expira (por defecto 30 días)
 }
 ```
 
@@ -232,24 +233,39 @@ cd backend
 npm install
 ```
 
-Crear archivo `.env` en la carpeta `backend`:
+Crear archivo `.env` en la carpeta `backend` (desarrollo):
 
 ```env
 # MongoDB
-MONGODB_URI=mongodb://localhost:27017/soul_experiences
+MONGODB_URI=mongodb://localhost:27017/clari-retiros
 
 # JWT
 JWT_SECRET=tu_jwt_secret_muy_seguro
 JWT_EXPIRE=7d
 
-# Cloudinary
-CLOUDINARY_CLOUD_NAME=tu_cloud_name
-CLOUDINARY_API_KEY=tu_api_key
-CLOUDINARY_API_SECRET=tu_api_secret
+# Email (si usas Gmail, App Password sin espacios)
+EMAIL_USER=tu_correo@gmail.com
+EMAIL_PASSWORD=tu_app_password
 
 # Servidor
-PORT=5000
+PORT=5001
 NODE_ENV=development
+
+# Origen del frontend (CORS) y cookies (dev)
+FRONTEND_ORIGIN=http://localhost:3000
+COOKIE_SAMESITE=lax
+COOKIE_SECURE=false
+```
+
+Variables de producción (en Render u hosting del backend):
+
+```env
+NODE_ENV=production
+FRONTEND_ORIGIN=https://clariweb.onrender.com
+COOKIE_SAMESITE=none
+COOKIE_SECURE=true
+MONGODB_URI=<tu_uri_prod>
+JWT_SECRET=<tu_secreto_prod>
 ```
 
 ### 3. Configurar Frontend
@@ -259,12 +275,18 @@ cd frontend
 npm install
 ```
 
-Crear archivo `.env` en la carpeta `frontend`:
+Crear archivo `.env` en la carpeta `frontend` (desarrollo):
 
 ```env
-VITE_API_URL=http://localhost:5000/api
+VITE_API_URL=http://localhost:5001/api
 VITE_CLOUDINARY_CLOUD_NAME=tu_cloud_name
 VITE_CLOUDINARY_UPLOAD_PRESET=tu_upload_preset
+```
+
+Variables de producción (en hosting del frontend):
+
+```env
+VITE_API_URL=https://soul-experiences.onrender.com/api
 ```
 
 ### 4. Ejecutar el Proyecto
@@ -284,9 +306,9 @@ npm run dev
 ## 🛣️ Endpoints de la API
 
 ### Autenticación
-- `POST /api/auth/login` - Iniciar sesión
-- `GET /api/auth/me` - Obtener perfil del usuario
-- `POST /api/auth/logout` - Cerrar sesión
+- `POST /api/auth/login` - Iniciar sesión (setea cookie HttpOnly de sesión)
+- `GET /api/auth/me` - Obtener perfil del usuario (requiere cookie)
+- `POST /api/auth/logout` - Cerrar sesión (borra cookie)
 - `PUT /api/auth/change-password` - Cambiar contraseña
 - `POST /api/auth/create-admin` - Crear administrador (solo si no existe)
 
@@ -380,12 +402,29 @@ npm run dev
 }
 ```
 
+### Crear Lead (POST /api/leads)
+```json
+{
+  "name": "María González",
+  "email": "maria@email.com",
+  "phone": "+54 9 11 1234-5678",
+  "retreat": "64f8b2c1234567890abcdef1",
+  "message": "Hola, me interesa reservar una plaza para el próximo retiro.",
+  "interest": "consulta",
+  "source": "landing"
+}
+```
+
+Notas:
+- El campo `retreat` referencia al mismo ID usado en los mocks de Retiro y Testimonio para mantener coherencia.
+- Los demás campos no requeridos (por ejemplo `paymentStatus`, `paymentAmount`, `paymentMethod`, `notes`) tienen valores por defecto según el esquema y pueden omitirse al crear.
+
 ## 🔐 Seguridad Implementada
 
-- **Autenticación JWT**: Tokens seguros para sesiones
+- **Autenticación JWT + Cookies HttpOnly**: sesión en cookie HttpOnly (no `localStorage`, no header `Authorization`)
 - **Encriptación bcrypt**: Contraseñas hasheadas con salt
 - **Validación de entrada**: Mongoose validators y sanitización
-- **CORS configurado**: Control de acceso entre dominios
+- **CORS configurado**: Control de acceso entre dominios, con `credentials: true`
 - **Helmet**: Headers de seguridad HTTP
 - **Variables de entorno**: Datos sensibles protegidos
 
@@ -634,7 +673,7 @@ const token = await TestimonialToken.findOne({ token: tokenString })
 
 ### Sistema de Imágenes con Cloudinary
 - **Upload directo** desde el navegador con preset unsigned
-- **Drag & drop** intuitivo con vista previa
+- **Selección por botón** con vista previa
 - **Múltiples imágenes** por retiro
 - **Selector de imagen hero** específica para cada retiro
 - **Optimización automática** de calidad y formato
