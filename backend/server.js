@@ -42,13 +42,13 @@ const cspConfig = {
 // Middlewares
 app.use(helmet({
   contentSecurityPolicy: cspConfig,
-  crossOriginEmbedderPolicy: true,
-  crossOriginOpenerPolicy: true,
-  crossOriginResourcePolicy: { policy: "same-site" },
-  dnsPrefetchControl: true,
+  crossOriginEmbedderPolicy: { policy: 'require-corp' },
+  crossOriginOpenerPolicy: { policy: 'same-origin' },
+  crossOriginResourcePolicy: { policy: 'same-site' },
+  dnsPrefetchControl: { allow: false },
   frameguard: { action: 'deny' },
   hidePoweredBy: true,
-  hsts: true,
+  hsts: { maxAge: 15552000, includeSubDomains: true },
   ieNoOpen: true,
   noSniff: true,
   referrerPolicy: { policy: 'same-origin' },
