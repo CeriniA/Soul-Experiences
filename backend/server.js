@@ -29,7 +29,19 @@ const PORT = DATABASE_CONFIG.PORT;
 const cspConfig = {
   directives: {
     defaultSrc: ["'self'"],
-    scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+    scriptSrc: [
+      "'self'",
+      "'unsafe-inline'"
+    ],
+    // Configuración de Trusted Types
+    requireTrustedTypesFor: ["'script'"],
+    trustedTypes: [
+      'default',
+      { 
+        'policy-1': 'require-trusted-types-for "script";',
+        'policy-2': 'trusted-types default'
+      }
+    ],
     styleSrc: ["'self'", "'unsafe-inline'"],
     imgSrc: ["'self'", "data:", "https: http:"],
     connectSrc: ["'self'", "https://*.tiles.mapbox.com", "https://api.mapbox.com"],
