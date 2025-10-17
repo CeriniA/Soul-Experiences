@@ -2,6 +2,7 @@ import TestimonialToken from '../models/TestimonialToken.js';
 import Lead from '../models/Lead.js';
 import Retreat from '../models/Retreat.js';
 import emailService from './emailService.js';
+import AppError from '../utils/AppError.js';
 
 /**
  * Servicio para manejar la lógica de negocio de los tokens de testimonio
@@ -19,21 +20,16 @@ class TokenService {
       // Verificar que el retiro existe
       const retreat = await Retreat.findById(retreatId);
       if (!retreat) {
-        const error = new Error('Retiro no encontrado');
-        error.statusCode = 404;
-        throw error;
+        throw AppError.notFound('Retiro no encontrado');
       }
 
       // Validar que el retiro esté completado
       if (retreat.status !== 'completed') {
-        const error = new Error('Solo se pueden generar tokens para retiros completados');
-        error.statusCode = 400;
-        error.info = {
+        throw AppError.badRequest('Solo se pueden generar tokens para retiros completados', {
           currentStatus: retreat.status,
           requiredStatus: 'completed',
           message: 'El retiro debe estar en estado "completed" para generar tokens de testimonios'
-        };
-        throw error;
+        });
       }
 
       // Obtener participantes confirmados del retiro
@@ -43,9 +39,7 @@ class TokenService {
       }).select('name email');
 
       if (confirmedLeads.length === 0) {
-        const error = new Error('No hay participantes confirmados para este retiro');
-        error.statusCode = 400;
-        throw error;
+        throw AppError.badRequest('No hay participantes confirmados para este retiro');
       }
 
       // Verificar cuántos tokens ya existen para este retiro
@@ -58,13 +52,10 @@ class TokenService {
       );
 
       if (participantsWithoutToken.length === 0) {
-        const error = new Error('Todos los participantes ya tienen tokens generados');
-        error.statusCode = 400;
-        error.info = {
+        throw AppError.badRequest('Todos los participantes ya tienen tokens generados', {
           totalParticipants: confirmedLeads.length,
           tokensExisting: existingTokens.length
-        };
-        throw error;
+        });
       }
 
       // Generar tokens para TODOS los participantes sin token
@@ -132,10 +123,10 @@ class TokenService {
         }
       };
     } catch (error) {
-      if (error.statusCode) {
+      if (error instanceof AppError || error.statusCode) {
         throw error;
       }
-      throw new Error(`Error al generar tokens: ${error.message}`);
+      throw AppError.internal(`Error al generar tokens: ${error.message}`);
     }
   }
 
@@ -202,7 +193,8 @@ class TokenService {
         data: tokens
       };
     } catch (error) {
-      throw new Error(`Error al obtener tokens: ${error.message}`);
+      if (error instanceof AppError || error.statusCode) throw error;
+      throw AppError.internal(`Error al obtener tokens: ${error.message}`);
     }
   }
 
@@ -218,9 +210,7 @@ class TokenService {
         .populate('testimonial', 'rating comment isApproved createdAt');
 
       if (!token) {
-        const error = new Error('Token no encontrado');
-        error.statusCode = 404;
-        throw error;
+        throw AppError.notFound('Token no encontrado');
       }
 
       return {
@@ -228,10 +218,10 @@ class TokenService {
         data: token
       };
     } catch (error) {
-      if (error.statusCode) {
+      if (error instanceof AppError || error.statusCode) {
         throw error;
       }
-      throw new Error(`Error al obtener token: ${error.message}`);
+      throw AppError.internal(`Error al obtener token: ${error.message}`);
     }
   }
 
@@ -245,9 +235,7 @@ class TokenService {
       const token = await TestimonialToken.findByIdAndDelete(id);
 
       if (!token) {
-        const error = new Error('Token no encontrado');
-        error.statusCode = 404;
-        throw error;
+        throw AppError.notFound('Token no encontrado');
       }
 
       return {
@@ -255,10 +243,10 @@ class TokenService {
         message: 'Token eliminado exitosamente'
       };
     } catch (error) {
-      if (error.statusCode) {
+      if (error instanceof AppError || error.statusCode) {
         throw error;
       }
-      throw new Error(`Error al eliminar token: ${error.message}`);
+      throw AppError.internal(`Error al eliminar token: ${error.message}`);
     }
   }
 
@@ -272,15 +260,11 @@ class TokenService {
       const oldToken = await TestimonialToken.findById(id);
 
       if (!oldToken) {
-        const error = new Error('Token no encontrado');
-        error.statusCode = 404;
-        throw error;
+        throw AppError.notFound('Token no encontrado');
       }
 
       if (oldToken.isUsed) {
-        const error = new Error('No se puede regenerar un token ya utilizado');
-        error.statusCode = 400;
-        throw error;
+        throw AppError.badRequest('No se puede regenerar un token ya utilizado');
       }
 
       // Eliminar token viejo
@@ -301,10 +285,10 @@ class TokenService {
         data: newToken
       };
     } catch (error) {
-      if (error.statusCode) {
+      if (error instanceof AppError || error.statusCode) {
         throw error;
       }
-      throw new Error(`Error al regenerar token: ${error.message}`);
+      throw AppError.internal(`Error al regenerar token: ${error.message}`);
     }
   }
 
@@ -318,9 +302,7 @@ class TokenService {
       const tokenData = await TestimonialToken.validateToken(tokenString);
 
       if (!tokenData) {
-        const error = new Error('Token inválido, expirado o ya utilizado');
-        error.statusCode = 404;
-        throw error;
+        throw AppError.notFound('Token inválido, expirado o ya utilizado');
       }
 
       return {
@@ -338,10 +320,10 @@ class TokenService {
         }
       };
     } catch (error) {
-      if (error.statusCode) {
+      if (error instanceof AppError || error.statusCode) {
         throw error;
       }
-      throw new Error(`Error al validar token: ${error.message}`);
+      throw AppError.internal(`Error al validar token: ${error.message}`);
     }
   }
 }

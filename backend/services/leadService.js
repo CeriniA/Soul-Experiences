@@ -1,6 +1,7 @@
 import Lead from '../models/Lead.js';
 import Retreat from '../models/Retreat.js';
 import { LEAD_STATUS, PAYMENT_STATUS, countsAsConfirmedParticipant } from '../constants/enums.js';
+import AppError from '../utils/AppError.js';
 
 /**
  * Servicio para manejar la lógica de negocio de los leads
@@ -77,7 +78,8 @@ class LeadService {
         data: leads
       };
     } catch (error) {
-      throw new Error(`Error al obtener leads: ${error.message}`);
+      if (error instanceof AppError || error.statusCode) throw error;
+      throw AppError.internal(`Error al obtener leads: ${error.message}`);
     }
   }
 
@@ -92,9 +94,7 @@ class LeadService {
         .populate('retreat', 'title startDate endDate price location maxParticipants');
 
       if (!lead) {
-        const error = new Error('Lead no encontrado');
-        error.statusCode = 404;
-        throw error;
+        throw AppError.notFound('Lead no encontrado');
       }
 
       // Enriquecer con datos de disponibilidad del retiro
@@ -115,10 +115,10 @@ class LeadService {
         data: lead
       };
     } catch (error) {
-      if (error.statusCode) {
+      if (error instanceof AppError || error.statusCode) {
         throw error;
       }
-      throw new Error(`Error al obtener lead: ${error.message}`);
+      throw AppError.internal(`Error al obtener lead: ${error.message}`);
     }
   }
 
@@ -136,17 +136,13 @@ class LeadService {
       });
 
       if (!retreat) {
-        const error = new Error('Retiro no disponible');
-        error.statusCode = 400;
-        throw error;
+        throw AppError.badRequest('Retiro no disponible');
       }
 
       // Verificar disponibilidad
       const confirmedCount = await this.getConfirmedParticipantsCount(leadData.retreat);
       if (confirmedCount >= retreat.maxParticipants) {
-        const error = new Error('El retiro está completo. No hay lugares disponibles.');
-        error.statusCode = 400;
-        throw error;
+        throw AppError.badRequest('El retiro está completo. No hay lugares disponibles.');
       }
 
       // Verificar si ya existe un lead con este email para este retiro
@@ -156,9 +152,7 @@ class LeadService {
       });
       
       if (existingLead) {
-        const error = new Error('Ya existe una consulta con este email para este retiro');
-        error.statusCode = 400;
-        throw error;
+        throw AppError.badRequest('Ya existe una consulta con este email para este retiro');
       }
 
       const lead = await Lead.create({
@@ -177,24 +171,19 @@ class LeadService {
       };
     } catch (error) {
       if (error.code === 11000) {
-        const duplicateError = new Error('Ya enviaste una consulta para este retiro');
-        duplicateError.statusCode = 400;
-        throw duplicateError;
+        throw AppError.badRequest('Ya enviaste una consulta para este retiro');
       }
 
       if (error.name === 'ValidationError') {
         const messages = Object.values(error.errors).map(err => err.message);
-        const validationError = new Error('Error de validación');
-        validationError.statusCode = 400;
-        validationError.messages = messages;
-        throw validationError;
+        throw AppError.validationError('Error de validación', { errors: messages });
       }
 
-      if (error.statusCode) {
+      if (error instanceof AppError || error.statusCode) {
         throw error;
       }
 
-      throw new Error(`Error al crear lead: ${error.message}`);
+      throw AppError.internal(`Error al crear lead: ${error.message}`);
     }
   }
 
@@ -209,9 +198,7 @@ class LeadService {
       // Obtener lead actual
       const currentLead = await Lead.findById(id);
       if (!currentLead) {
-        const error = new Error('Lead no encontrado');
-        error.statusCode = 404;
-        throw error;
+        throw AppError.notFound('Lead no encontrado');
       }
 
       // Verificar si el lead estaba confirmado antes
@@ -271,17 +258,14 @@ class LeadService {
     } catch (error) {
       if (error.name === 'ValidationError') {
         const messages = Object.values(error.errors).map(err => err.message);
-        const validationError = new Error('Error de validación');
-        validationError.statusCode = 400;
-        validationError.messages = messages;
-        throw validationError;
+        throw AppError.validationError('Error de validación', { errors: messages });
       }
 
-      if (error.statusCode) {
+      if (error instanceof AppError || error.statusCode) {
         throw error;
       }
 
-      throw new Error(`Error al actualizar lead: ${error.message}`);
+      throw AppError.internal(`Error al actualizar lead: ${error.message}`);
     }
   }
 
@@ -295,9 +279,7 @@ class LeadService {
       const lead = await Lead.findById(id);
 
       if (!lead) {
-        const error = new Error('Lead no encontrado');
-        error.statusCode = 404;
-        throw error;
+        throw AppError.notFound('Lead no encontrado');
       }
 
       // Verificar si estaba confirmado (afecta disponibilidad)
@@ -316,10 +298,10 @@ class LeadService {
         availabilityChanged: wasConfirmed
       };
     } catch (error) {
-      if (error.statusCode) {
+      if (error instanceof AppError || error.statusCode) {
         throw error;
       }
-      throw new Error(`Error al eliminar lead: ${error.message}`);
+      throw AppError.internal(`Error al eliminar lead: ${error.message}`);
     }
   }
 
@@ -397,7 +379,8 @@ class LeadService {
         data: result
       };
     } catch (error) {
-      throw new Error(`Error al obtener estadísticas: ${error.message}`);
+      if (error instanceof AppError || error.statusCode) throw error;
+      throw AppError.internal(`Error al obtener estadísticas: ${error.message}`);
     }
   }
 }

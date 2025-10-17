@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import AppError from '../utils/AppError.js';
 
 // Extraer token desde Authorization Bearer o cookie 'token'
 function extractToken(req) {
@@ -40,10 +41,7 @@ export const protect = async (req, res, next) => {
 
     if (!token) {
       console.log('❌ No token found');
-      return res.status(401).json({
-        success: false,
-        error: 'No autorizado, token requerido'
-      });
+      return next(AppError.unauthorized('No autorizado, token requerido'));
     }
 
     try {
@@ -54,27 +52,18 @@ export const protect = async (req, res, next) => {
       const user = await User.findById(decoded.id);
 
       if (!user) {
-        return res.status(401).json({
-          success: false,
-          error: 'No autorizado, usuario no encontrado'
-        });
+        return next(AppError.unauthorized('No autorizado, usuario no encontrado'));
       }
 
       // Agregar usuario a la request
       req.user = user;
       next();
     } catch (error) {
-      return res.status(401).json({
-        success: false,
-        error: 'No autorizado, token inválido'
-      });
+      // Dejar que el error de JWT sea mapeado por el errorHandler (TokenExpiredError/JsonWebTokenError)
+      return next(error);
     }
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: 'Error en el servidor',
-      message: error.message
-    });
+    return next(error);
   }
 };
 
@@ -119,6 +108,6 @@ export const optionalAuth = async (req, res, next) => {
     next();
   } catch (error) {
     console.log('❌ Error en optionalAuth:', error.message);
-    next();
+    next(error);
   }
 };

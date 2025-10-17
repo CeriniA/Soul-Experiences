@@ -1,5 +1,6 @@
 import Testimonial from '../models/Testimonial.js';
 import TestimonialToken from '../models/TestimonialToken.js';
+import AppError from '../utils/AppError.js';
 
 /**
  * Servicio para manejar la lógica de negocio de los testimonios
@@ -80,7 +81,8 @@ class TestimonialService {
         }
       };
     } catch (error) {
-      throw new Error(`Error al obtener testimonios: ${error.message}`);
+      if (error instanceof AppError || error.statusCode) throw error;
+      throw AppError.internal(`Error al obtener testimonios: ${error.message}`);
     }
   }
 
@@ -95,9 +97,7 @@ class TestimonialService {
         .populate('retreat', 'title startDate endDate location');
 
       if (!testimonial) {
-        const error = new Error('Testimonio no encontrado');
-        error.statusCode = 404;
-        throw error;
+        throw AppError.notFound('Testimonio no encontrado');
       }
 
       return {
@@ -105,10 +105,10 @@ class TestimonialService {
         data: testimonial
       };
     } catch (error) {
-      if (error.statusCode) {
+      if (error instanceof AppError || error.statusCode) {
         throw error;
       }
-      throw new Error(`Error al obtener testimonio: ${error.message}`);
+      throw AppError.internal(`Error al obtener testimonio: ${error.message}`);
     }
   }
 
@@ -126,16 +126,12 @@ class TestimonialService {
       const testimonialToken = await TestimonialToken.validateToken(token);
       
       if (!testimonialToken) {
-        const error = new Error('Token inválido o expirado');
-        error.statusCode = 400;
-        throw error;
+        throw AppError.badRequest('Token inválido o expirado');
       }
 
       // Verificar que no se haya usado ya
       if (testimonialToken.isUsed) {
-        const error = new Error('Este token ya fue utilizado');
-        error.statusCode = 400;
-        throw error;
+        throw AppError.badRequest('Este token ya fue utilizado');
       }
 
       // Crear testimonio
@@ -163,19 +159,16 @@ class TestimonialService {
         message: 'Testimonio enviado exitosamente. Será revisado antes de publicarse.'
       };
     } catch (error) {
-      if (error.statusCode) {
+      if (error instanceof AppError || error.statusCode) {
         throw error;
       }
 
       if (error.name === 'ValidationError') {
         const messages = Object.values(error.errors).map(err => err.message);
-        const validationError = new Error('Error de validación');
-        validationError.statusCode = 400;
-        validationError.messages = messages;
-        throw validationError;
+        throw AppError.validationError('Error de validación', { errors: messages });
       }
 
-      throw new Error(`Error al enviar testimonio: ${error.message}`);
+      throw AppError.internal(`Error al enviar testimonio: ${error.message}`);
     }
   }
 
@@ -189,9 +182,7 @@ class TestimonialService {
       const testimonialToken = await TestimonialToken.validateToken(token);
       
       if (!testimonialToken) {
-        const error = new Error('Token inválido o expirado');
-        error.statusCode = 400;
-        throw error;
+        throw AppError.badRequest('Token inválido o expirado');
       }
 
       return {
@@ -207,10 +198,10 @@ class TestimonialService {
         }
       };
     } catch (error) {
-      if (error.statusCode) {
+      if (error instanceof AppError || error.statusCode) {
         throw error;
       }
-      throw new Error(`Error al validar token: ${error.message}`);
+      throw AppError.internal(`Error al validar token: ${error.message}`);
     }
   }
 
@@ -227,9 +218,7 @@ class TestimonialService {
       const testimonialToken = await TestimonialToken.validateToken(token);
       
       if (!testimonialToken) {
-        const error = new Error('Token inválido, expirado o ya utilizado');
-        error.statusCode = 400;
-        throw error;
+        throw AppError.badRequest('Token inválido, expirado o ya utilizado');
       }
 
       // Crear testimonio
@@ -254,19 +243,16 @@ class TestimonialService {
         message: 'Testimonio enviado exitosamente. Será revisado antes de publicarse.'
       };
     } catch (error) {
-      if (error.statusCode) {
+      if (error instanceof AppError || error.statusCode) {
         throw error;
       }
 
       if (error.name === 'ValidationError') {
         const messages = Object.values(error.errors).map(err => err.message);
-        const validationError = new Error('Error de validación');
-        validationError.statusCode = 400;
-        validationError.messages = messages;
-        throw validationError;
+        throw AppError.validationError('Error de validación', { errors: messages });
       }
 
-      throw new Error(`Error al crear testimonio: ${error.message}`);
+      throw AppError.internal(`Error al crear testimonio: ${error.message}`);
     }
   }
 
@@ -289,13 +275,11 @@ class TestimonialService {
     } catch (error) {
       if (error.name === 'ValidationError') {
         const messages = Object.values(error.errors).map(err => err.message);
-        const validationError = new Error('Error de validación');
-        validationError.statusCode = 400;
-        validationError.messages = messages;
-        throw validationError;
+        throw AppError.validationError('Error de validación', { errors: messages });
       }
 
-      throw new Error(`Error al crear testimonio: ${error.message}`);
+      if (error instanceof AppError || error.statusCode) throw error;
+      throw AppError.internal(`Error al crear testimonio: ${error.message}`);
     }
   }
 
@@ -317,9 +301,7 @@ class TestimonialService {
       ).populate('retreat', 'title startDate endDate');
 
       if (!testimonial) {
-        const error = new Error('Testimonio no encontrado');
-        error.statusCode = 404;
-        throw error;
+        throw AppError.notFound('Testimonio no encontrado');
       }
 
       return {
@@ -328,19 +310,16 @@ class TestimonialService {
         message: 'Testimonio actualizado exitosamente'
       };
     } catch (error) {
-      if (error.statusCode) {
+      if (error instanceof AppError || error.statusCode) {
         throw error;
       }
 
       if (error.name === 'ValidationError') {
         const messages = Object.values(error.errors).map(err => err.message);
-        const validationError = new Error('Error de validación');
-        validationError.statusCode = 400;
-        validationError.messages = messages;
-        throw validationError;
+        throw AppError.validationError('Error de validación', { errors: messages });
       }
 
-      throw new Error(`Error al actualizar testimonio: ${error.message}`);
+      throw AppError.internal(`Error al actualizar testimonio: ${error.message}`);
     }
   }
 
@@ -354,9 +333,7 @@ class TestimonialService {
       const testimonial = await Testimonial.findByIdAndDelete(id);
 
       if (!testimonial) {
-        const error = new Error('Testimonio no encontrado');
-        error.statusCode = 404;
-        throw error;
+        throw AppError.notFound('Testimonio no encontrado');
       }
 
       return {
@@ -364,10 +341,10 @@ class TestimonialService {
         message: 'Testimonio eliminado exitosamente'
       };
     } catch (error) {
-      if (error.statusCode) {
+      if (error instanceof AppError || error.statusCode) {
         throw error;
       }
-      throw new Error(`Error al eliminar testimonio: ${error.message}`);
+      throw AppError.internal(`Error al eliminar testimonio: ${error.message}`);
     }
   }
 
@@ -392,7 +369,8 @@ class TestimonialService {
         count: testimonials.length
       };
     } catch (error) {
-      throw new Error(`Error al obtener testimonios destacados: ${error.message}`);
+      if (error instanceof AppError || error.statusCode) throw error;
+      throw AppError.internal(`Error al obtener testimonios destacados: ${error.message}`);
     }
   }
 }

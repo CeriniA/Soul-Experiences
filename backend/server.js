@@ -16,6 +16,10 @@ import testimonialRoutes from './routes/testimonials.js';
 import settingRoutes from './routes/settings.js';
 import tokenRoutes from './routes/tokens.js';
 
+// Manejo de errores centralizado
+import errorHandler from './middleware/errorHandler.js';
+import AppError from './utils/AppError.js';
+
 //Borrar esto - Prueba de email
 import emailService from './services/emailService.js';
 
@@ -134,22 +138,13 @@ app.get('/api/test-email', async (req, res) => {
   }
 });
 
-// Manejo de rutas no encontradas
-app.use('*', (req, res) => {
-  res.status(404).json({
-    error: 'Ruta no encontrada',
-    message: `La ruta ${req.originalUrl} no existe`
-  });
+// Manejo de rutas no encontradas (404) a través del handler central
+app.use((req, res, next) => {
+  next(AppError.notFound(`La ruta ${req.originalUrl} no existe`));
 });
 
-// Manejo de errores global
-app.use((err, req, res, next) => {
-  console.error('Error:', err.stack);
-  res.status(500).json({
-    error: 'Error interno del servidor',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Algo salió mal'
-  });
-});
+// Manejo de errores global centralizado
+app.use(errorHandler);
 
 // Iniciar servidor
 const startServer = async () => {

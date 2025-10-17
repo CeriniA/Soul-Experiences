@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import AppError from '../utils/AppError.js';
 
 /**
  * Servicio para manejar la lógica de negocio de los usuarios
@@ -16,27 +17,21 @@ class UserService {
     try {
       // Validar que se proporcionen email y password
       if (!email || !password) {
-        const error = new Error('Por favor proporciona email y contraseña');
-        error.statusCode = 400;
-        throw error;
+        throw AppError.badRequest('Por favor proporciona email y contraseña');
       }
 
       // Buscar usuario y incluir password
       const user = await User.findOne({ email }).select('+password');
 
       if (!user) {
-        const error = new Error('Credenciales inválidas');
-        error.statusCode = 401;
-        throw error;
+        throw AppError.unauthorized('Credenciales inválidas');
       }
 
       // Verificar password
       const isPasswordCorrect = await user.comparePassword(password);
 
       if (!isPasswordCorrect) {
-        const error = new Error('Credenciales inválidas');
-        error.statusCode = 401;
-        throw error;
+        throw AppError.unauthorized('Credenciales inválidas');
       }
 
       // Actualizar último login (se eliminó la validación de isActive)
@@ -57,10 +52,10 @@ class UserService {
         }
       };
     } catch (error) {
-      if (error.statusCode) {
+      if (error instanceof AppError || error.statusCode) {
         throw error;
       }
-      throw new Error(`Error en la autenticación: ${error.message}`);
+      throw AppError.internal(`Error en la autenticación: ${error.message}`);
     }
   }
 
@@ -74,9 +69,7 @@ class UserService {
       const user = await User.findById(userId);
 
       if (!user) {
-        const error = new Error('Usuario no encontrado');
-        error.statusCode = 404;
-        throw error;
+        throw AppError.notFound('Usuario no encontrado');
       }
 
       return {
@@ -90,10 +83,10 @@ class UserService {
         }
       };
     } catch (error) {
-      if (error.statusCode) {
+      if (error instanceof AppError || error.statusCode) {
         throw error;
       }
-      throw new Error(`Error al obtener perfil: ${error.message}`);
+      throw AppError.internal(`Error al obtener perfil: ${error.message}`);
     }
   }
 
@@ -107,9 +100,7 @@ class UserService {
   async changeUserPassword(userId, currentPassword, newPassword) {
     try {
       if (!currentPassword || !newPassword) {
-        const error = new Error('Por favor proporciona la contraseña actual y la nueva');
-        error.statusCode = 400;
-        throw error;
+        throw AppError.badRequest('Por favor proporciona la contraseña actual y la nueva');
       }
 
       // Buscar usuario con password
@@ -125,9 +116,7 @@ class UserService {
       const isCurrentPasswordCorrect = await user.comparePassword(currentPassword);
 
       if (!isCurrentPasswordCorrect) {
-        const error = new Error('Contraseña actual incorrecta');
-        error.statusCode = 400;
-        throw error;
+        throw AppError.badRequest('Contraseña actual incorrecta');
       }
 
       // Actualizar contraseña
@@ -139,10 +128,10 @@ class UserService {
         message: 'Contraseña actualizada exitosamente'
       };
     } catch (error) {
-      if (error.statusCode) {
+      if (error instanceof AppError || error.statusCode) {
         throw error;
       }
-      throw new Error(`Error al cambiar contraseña: ${error.message}`);
+      throw AppError.internal(`Error al cambiar contraseña: ${error.message}`);
     }
   }
 
@@ -157,17 +146,13 @@ class UserService {
       const existingUser = await User.findOne();
 
       if (existingUser) {
-        const error = new Error('Ya existe un usuario administrador');
-        error.statusCode = 400;
-        throw error;
+        throw AppError.badRequest('Ya existe un usuario administrador');
       }
 
       const { name, email, password } = adminData;
 
       if (!name || !email || !password) {
-        const error = new Error('Por favor proporciona nombre, email y contraseña');
-        error.statusCode = 400;
-        throw error;
+        throw AppError.badRequest('Por favor proporciona nombre, email y contraseña');
       }
 
       const admin = await User.create({
@@ -189,17 +174,15 @@ class UserService {
         }
       };
     } catch (error) {
-      if (error.statusCode) {
+      if (error instanceof AppError || error.statusCode) {
         throw error;
       }
 
       if (error.code === 11000) {
-        const duplicateError = new Error('El email ya está registrado');
-        duplicateError.statusCode = 400;
-        throw duplicateError;
+        throw AppError.conflict('El email ya está registrado');
       }
 
-      throw new Error(`Error al crear administrador: ${error.message}`);
+      throw AppError.internal(`Error al crear administrador: ${error.message}`);
     }
   }
 
@@ -242,7 +225,8 @@ class UserService {
         }
       };
     } catch (error) {
-      throw new Error(`Error al obtener usuarios: ${error.message}`);
+      if (error instanceof AppError || error.statusCode) throw error;
+      throw AppError.internal(`Error al obtener usuarios: ${error.message}`);
     }
   }
 
@@ -268,20 +252,16 @@ class UserService {
       };
     } catch (error) {
       if (error.code === 11000) {
-        const duplicateError = new Error('El email ya está registrado');
-        duplicateError.statusCode = 400;
-        throw duplicateError;
+        throw AppError.conflict('El email ya está registrado');
       }
 
       if (error.name === 'ValidationError') {
         const messages = Object.values(error.errors).map(err => err.message);
-        const validationError = new Error('Error de validación');
-        validationError.statusCode = 400;
-        validationError.messages = messages;
-        throw validationError;
+        throw AppError.validationError('Error de validación', { errors: messages });
       }
 
-      throw new Error(`Error al crear usuario: ${error.message}`);
+      if (error instanceof AppError || error.statusCode) throw error;
+      throw AppError.internal(`Error al crear usuario: ${error.message}`);
     }
   }
 
@@ -320,19 +300,16 @@ class UserService {
         message: 'Usuario actualizado exitosamente'
       };
     } catch (error) {
-      if (error.statusCode) {
+      if (error instanceof AppError || error.statusCode) {
         throw error;
       }
 
       if (error.name === 'ValidationError') {
         const messages = Object.values(error.errors).map(err => err.message);
-        const validationError = new Error('Error de validación');
-        validationError.statusCode = 400;
-        validationError.messages = messages;
-        throw validationError;
+        throw AppError.validationError('Error de validación', { errors: messages });
       }
 
-      throw new Error(`Error al actualizar usuario: ${error.message}`);
+      throw AppError.internal(`Error al actualizar usuario: ${error.message}`);
     }
   }
 
@@ -356,10 +333,10 @@ class UserService {
         message: 'Usuario eliminado exitosamente'
       };
     } catch (error) {
-      if (error.statusCode) {
+      if (error instanceof AppError || error.statusCode) {
         throw error;
       }
-      throw new Error(`Error al eliminar usuario: ${error.message}`);
+      throw AppError.internal(`Error al eliminar usuario: ${error.message}`);
     }
   }
 
@@ -378,7 +355,8 @@ class UserService {
         message: 'Logout exitoso'
       };
     } catch (error) {
-      throw new Error(`Error en logout: ${error.message}`);
+      if (error instanceof AppError || error.statusCode) throw error;
+      throw AppError.internal(`Error en logout: ${error.message}`);
     }
   }
 }

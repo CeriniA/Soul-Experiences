@@ -1,5 +1,6 @@
 import Retreat from '../models/Retreat.js';
 import Lead from '../models/Lead.js';
+import AppError from '../utils/AppError.js';
 
 /**
  * Servicio para manejar la lógica de negocio de los retiros
@@ -75,7 +76,8 @@ class RetreatService {
         }
       };
     } catch (error) {
-      throw new Error(`Error al obtener retiros: ${error.message}`);
+      if (error instanceof AppError || error.statusCode) throw error;
+      throw AppError.internal(`Error al obtener retiros: ${error.message}`);
     }
   }
 
@@ -95,9 +97,7 @@ class RetreatService {
       });
 
       if (!retreat) {
-        const error = new Error('Retiro no encontrado');
-        error.statusCode = 404;
-        throw error;
+        throw AppError.notFound('Retiro no encontrado');
       }
 
       // Enriquecer con datos de participantes
@@ -108,10 +108,10 @@ class RetreatService {
         data: enrichedRetreat
       };
     } catch (error) {
-      if (error.statusCode) {
+      if (error instanceof AppError || error.statusCode) {
         throw error;
       }
-      throw new Error(`Error al obtener retiro: ${error.message}`);
+      throw AppError.internal(`Error al obtener retiro: ${error.message}`);
     }
   }
 
@@ -133,26 +133,20 @@ class RetreatService {
         message: 'Retiro creado exitosamente'
       };
     } catch (error) {
-      // Manejar errores específicos
       if (error.code === 11000) {
-        const duplicateError = new Error('Ya existe un retiro con ese slug');
-        duplicateError.statusCode = 400;
-        throw duplicateError;
+        throw AppError.conflict('Ya existe un retiro con ese slug');
       }
 
       if (error.name === 'ValidationError') {
         const messages = Object.values(error.errors).map(err => err.message);
-        const validationError = new Error('Error de validación');
-        validationError.statusCode = 400;
-        validationError.messages = messages;
-        throw validationError;
+        throw AppError.validationError('Error de validación', { errors: messages });
       }
 
-      if (error.statusCode) {
+      if (error instanceof AppError || error.statusCode) {
         throw error;
       }
 
-      throw new Error(`Error al crear retiro: ${error.message}`);
+      throw AppError.internal(`Error al crear retiro: ${error.message}`);
     }
   }
 
@@ -191,9 +185,7 @@ class RetreatService {
       // Obtener retiro actual para validar con todos los datos
       const currentRetreat = await Retreat.findById(id);
       if (!currentRetreat) {
-        const error = new Error('Retiro no encontrado');
-        error.statusCode = 404;
-        throw error;
+        throw AppError.notFound('Retiro no encontrado');
       }
 
       // Combinar datos actuales con actualizaciones para validación completa
@@ -205,10 +197,9 @@ class RetreatService {
         const endDate = new Date(mergedData.endDate);
         
         if (endDate < startDate) {
-          const validationError = new Error('La fecha de fin debe ser posterior o igual a la fecha de inicio');
-          validationError.statusCode = 400;
-          validationError.messages = ['La fecha de fin debe ser posterior o igual a la fecha de inicio'];
-          throw validationError;
+          throw AppError.validationError('La fecha de fin debe ser posterior o igual a la fecha de inicio', {
+            errors: ['La fecha de fin debe ser posterior o igual a la fecha de inicio']
+          });
         }
       }
       
@@ -230,17 +221,13 @@ class RetreatService {
         message: 'Retiro actualizado exitosamente'
       };
     } catch (error) {
-      if (error.statusCode) {
+      if (error instanceof AppError || error.statusCode) {
         throw error;
       }
 
       if (error.name === 'ValidationError') {
         const messages = Object.values(error.errors).map(err => err.message);
-        const validationError = new Error('Error de validación');
-        validationError.statusCode = 400;
-        validationError.messages = messages;
-        validationError.details = error.errors;
-        throw validationError;
+        throw AppError.validationError('Error de validación', { errors: messages, details: error.errors });
       }
 
       if (error.name === 'CastError') {
@@ -250,14 +237,13 @@ class RetreatService {
           kind: error.kind,
           message: error.message
         });
-        const castError = new Error(`Error de formato en el campo "${error.path}": valor "${error.value}" no es válido`);
-        castError.statusCode = 400;
-        castError.path = error.path;
-        castError.value = error.value;
-        throw castError;
+        throw AppError.badRequest(`Error de formato en el campo "${error.path}": valor "${error.value}" no es válido`, {
+          path: error.path,
+          value: error.value
+        });
       }
 
-      throw new Error(`Error al actualizar retiro: ${error.message}`);
+      throw AppError.internal(`Error al actualizar retiro: ${error.message}`);
     }
   }
 
@@ -271,9 +257,7 @@ class RetreatService {
       const retreat = await Retreat.findByIdAndDelete(id);
 
       if (!retreat) {
-        const error = new Error('Retiro no encontrado');
-        error.statusCode = 404;
-        throw error;
+        throw AppError.notFound('Retiro no encontrado');
       }
 
       return {
@@ -281,10 +265,10 @@ class RetreatService {
         message: 'Retiro eliminado exitosamente'
       };
     } catch (error) {
-      if (error.statusCode) {
+      if (error instanceof AppError || error.statusCode) {
         throw error;
       }
-      throw new Error(`Error al eliminar retiro: ${error.message}`);
+      throw AppError.internal(`Error al eliminar retiro: ${error.message}`);
     }
   }
 
@@ -310,9 +294,7 @@ class RetreatService {
       }
 
       if (!retreat) {
-        const error = new Error('No hay retiros activos disponibles');
-        error.statusCode = 404;
-        throw error;
+        throw AppError.notFound('No hay retiros activos disponibles');
       }
 
       return {
@@ -320,10 +302,10 @@ class RetreatService {
         data: retreat
       };
     } catch (error) {
-      if (error.statusCode) {
+      if (error instanceof AppError || error.statusCode) {
         throw error;
       }
-      throw new Error(`Error al obtener retiro activo: ${error.message}`);
+      throw AppError.internal(`Error al obtener retiro activo: ${error.message}`);
     }
   }
 
@@ -347,7 +329,8 @@ class RetreatService {
         count: retreats.length
       };
     } catch (error) {
-      throw new Error(`Error al obtener retiros pasados: ${error.message}`);
+      if (error instanceof AppError || error.statusCode) throw error;
+      throw AppError.internal(`Error al obtener retiros pasados: ${error.message}`);
     }
   }
 
@@ -390,7 +373,8 @@ class RetreatService {
         }
       };
     } catch (error) {
-      throw new Error(`Error al obtener datos del hero: ${error.message}`);
+      if (error instanceof AppError || error.statusCode) throw error;
+      throw AppError.internal(`Error al obtener datos del hero: ${error.message}`);
     }
   }
 
@@ -457,9 +441,7 @@ class RetreatService {
     if (retreatData.status === 'completed' && retreatData.endDate) {
       const endDate = new Date(retreatData.endDate);
       if (endDate > now) {
-        const error = new Error('No puedes marcar como completado un retiro que aún no ha finalizado');
-        error.statusCode = 400;
-        throw error;
+        throw AppError.badRequest('No puedes marcar como completado un retiro que aún no ha finalizado');
       }
     }
   }
