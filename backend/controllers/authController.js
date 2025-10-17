@@ -62,6 +62,8 @@ export const changePassword = asyncHandler(async (req, res) => {
 // @route   POST /api/auth/create-admin
 // @access  Public (solo si no hay admins)
 export const createAdmin = asyncHandler(async (req, res) => {
-  const result = await userService.createAdminUser(req.body);
+  const { name, email, password } = req.body || {};
+  if (!name || !email || !password) throw AppError.badRequest('Datos requeridos');
+  const result = await userService.createAdminUser({ name, email, password });
   res.status(201).json(result);
 });

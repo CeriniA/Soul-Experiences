@@ -1,6 +1,7 @@
 import Retreat from '../models/Retreat.js';
 import Lead from '../models/Lead.js';
 import AppError from '../utils/AppError.js';
+import mongoose from 'mongoose';
 
 /**
  * Servicio para manejar la lógica de negocio de los retiros
@@ -88,13 +89,14 @@ class RetreatService {
    */
   async getRetreatById(identifier) {
     try {
-      // Buscar retiro por ID o slug
-      const retreat = await Retreat.findOne({
-        $or: [
-          { _id: identifier },
-          { slug: identifier }
-        ]
-      });
+      // Construir condiciones: solo buscar por _id si es un ObjectId válido
+      const orConditions = [];
+      if (mongoose.isValidObjectId(identifier)) {
+        orConditions.push({ _id: identifier });
+      }
+      orConditions.push({ slug: identifier });
+
+      const retreat = await Retreat.findOne({ $or: orConditions });
 
       if (!retreat) {
         throw AppError.notFound('Retiro no encontrado');
@@ -350,6 +352,11 @@ class RetreatService {
       const heroRetreats = activeRetreats.filter(retreat => retreat.showInHero);
       const finalActiveRetreats = heroRetreats.length > 0 ? heroRetreats : activeRetreats;
 
+      // Enriquecer retiros activos con participantes/disponibilidad
+      const enrichedActive = await Promise.all(
+        finalActiveRetreats.map(r => this.enrichRetreatWithParticipants(r))
+      );
+
       // Obtener retiros pasados para fallback
       const pastRetreats = await Retreat.find({ 
         status: 'completed',
@@ -359,16 +366,16 @@ class RetreatService {
       .limit(3);
 
       // Para compatibilidad, mantener activeRetreat como el primero
-      const activeRetreat = finalActiveRetreats.length > 0 ? finalActiveRetreats[0] : null;
+      const activeRetreat = enrichedActive.length > 0 ? enrichedActive[0] : null;
 
       return {
         success: true,
         data: {
-          activeRetreat, // Para compatibilidad con código existente
-          activeRetreats: finalActiveRetreats, // Todos los retiros activos para el carrusel
+          activeRetreat, // Para compatibilidad con código existente (enriquecido)
+          activeRetreats: enrichedActive, // Todos los retiros activos enriquecidos para el carrusel
           pastRetreats,
           hasActiveRetreat: !!activeRetreat,
-          hasMultipleActiveRetreats: finalActiveRetreats.length > 1,
+          hasMultipleActiveRetreats: enrichedActive.length > 1,
           hasPastRetreats: pastRetreats.length > 0
         }
       };
