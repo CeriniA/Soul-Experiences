@@ -218,6 +218,24 @@ retreatSchema.virtual('availableSpots').get(function() {
   return Math.max(0, this.maxParticipants - (this.currentParticipants || 0));
 });
 
+// Virtual para obtener el tier de precio activo (por fecha)
+retreatSchema.virtual('activePricingTier').get(function() {
+  const tiers = Array.isArray(this.pricingTiers) ? this.pricingTiers : [];
+  if (!tiers.length) return null;
+  const now = new Date();
+  const valid = tiers
+    .filter(t => t && t.validUntil && typeof t.price === 'number' && new Date(t.validUntil) >= now)
+    .sort((a, b) => new Date(a.validUntil) - new Date(b.validUntil));
+  return valid[0] || null;
+});
+
+// Virtual para obtener el precio efectivo (tier activo o precio base)
+retreatSchema.virtual('effectivePrice').get(function() {
+  const tier = this.activePricingTier;
+  if (tier && typeof tier.price === 'number') return tier.price;
+  return this.price;
+});
+
 // Índices para mejorar rendimiento
 retreatSchema.index({ status: 1, startDate: 1 });
 retreatSchema.index({ slug: 1 });
