@@ -5,7 +5,7 @@ import {
   getPublicSettings,
   resetSettings
 } from '../controllers/settingController.js';
-import { protect, authorize, optionalAuth } from '../middleware/auth.js';
+import { protect, optionalAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -15,7 +15,6 @@ router.get('/', optionalAuth, getSettings);
 
 // Rutas protegidas (admin dashboard)
 router.use(protect); // Todas las rutas siguientes requieren autenticación
-router.use(authorize()); // Usuario autenticado
 
 router.put('/', updateSettings);
 router.post('/reset', resetSettings);

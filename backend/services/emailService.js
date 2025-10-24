@@ -1,4 +1,6 @@
 import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
+import logger from '../utils/logger.js';
 
 /**
  * Servicio para envío de emails
@@ -221,13 +223,13 @@ Soul Experiences
 
     try {
       const info = await this.transporter.sendMail(mailOptions);
-      console.log('✅ Email enviado:', info.messageId);
+      logger.info('✅ Email enviado:', info.messageId);
       return {
         success: true,
         messageId: info.messageId
       };
     } catch (error) {
-      console.error('❌ Error enviando email:', error);
+      logger.error('❌ Error enviando email:', error);
       throw new Error(`Error al enviar email: ${error.message}`);
     }
   }
@@ -265,10 +267,10 @@ Soul Experiences
   async verifyConnection() {
     try {
       await this.transporter.verify();
-      console.log('✅ Servidor de email listo');
+      logger.info('✅ Servidor de email listo');
       return true;
     } catch (error) {
-      console.error('❌ Error en configuración de email:', error);
+      logger.error('❌ Error en configuración de email:', error);
       return false;
     }
   }

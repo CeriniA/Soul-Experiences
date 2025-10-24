@@ -9,7 +9,8 @@ import {
   getPastRetreats,
   getHeroData
 } from '../controllers/retreatController.js';
-import { protect, authorize, optionalAuth } from '../middleware/auth.js';
+import { protect, optionalAuth } from '../middleware/auth.js';
+import logger from '../utils/logger.js';
 
 const router = express.Router();
 
@@ -20,21 +21,17 @@ router.get('/past', getPastRetreats);
 router.get('/hero-data', getHeroData);
 router.get('/:id', getRetreat);
 
-// RUTA TEMPORAL DE PRUEBA (SIN AUTENTICACIÓN)
-router.put('/test/:id', (req, res, next) => {
-  console.log('🧪 RUTA DE PRUEBA ALCANZADA - ID:', req.params.id);
-  next();
-}, updateRetreat);
+// // RUTA TEMPORAL DE PRUEBA (SIN AUTENTICACIÓN)
+// router.put('/test/:id', (req, res, next) => {
+//   logger.debug('🧪 RUTA DE PRUEBA ALCANZADA - ID:', req.params.id);
+//   next();
+// }, updateRetreat);
 
 // Rutas protegidas (admin dashboard)
 router.use(protect); // Todas las rutas siguientes requieren autenticación
-router.use(authorize()); // Usuario autenticado
 
 router.post('/', createRetreat);
-router.put('/:id', (req, res, next) => {
-  console.log('🚀 RUTA PUT ALCANZADA - ID:', req.params.id);
-  next();
-}, updateRetreat);
+router.put('/:id', updateRetreat);
 router.delete('/:id', deleteRetreat);
 
 export default router;

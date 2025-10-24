@@ -1,11 +1,12 @@
 import express from 'express';
-import mongoose from 'mongoose';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 
 // Importar configuración
-import { DATABASE_CONFIG, validateConfig, APP_CONFIG } from './config/database.js';
+import { config, validateConfig } from './config/index.js';
+import { connectDB } from './config/database.js';
 
 // Importar rutas
 import testRoutes from './routes/test.js';
@@ -19,6 +20,7 @@ import tokenRoutes from './routes/tokens.js';
 // Manejo de errores centralizado
 import errorHandler from './middleware/errorHandler.js';
 import AppError from './utils/AppError.js';
+import logger from './utils/logger.js';
 
 //Borrar esto - Prueba de email
 import emailService from './services/emailService.js';
@@ -27,7 +29,7 @@ import emailService from './services/emailService.js';
 validateConfig();
 
 const app = express();
-const PORT = DATABASE_CONFIG.PORT;
+const PORT = config.server.port;
 
 // Necesario detrás de proxies (Render/Heroku) para que req.secure sea correcto y cookies Secure funcionen
 app.set('trust proxy', 1);
@@ -84,24 +86,15 @@ app.use(helmet({
 }));
 // Configurar CORS para cookies (parametrizado)
 app.use(cors({
-  origin: APP_CONFIG.FRONTEND_ORIGIN,
+  origin: config.app.frontendOrigin,
   credentials: true,
 }));
 app.use(morgan('combined'));
+app.use(cookieParser()); // Parse cookies antes de las rutas
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Conexión a MongoDB
-const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect(DATABASE_CONFIG.MONGODB_URI);
-    console.log(`✅ MongoDB conectado: ${conn.connection.host}`);
-    console.log(`📊 Base de datos: ${conn.connection.name}`);
-  } catch (error) {
-    console.error('❌ Error conectando a MongoDB:', error.message);
-    process.exit(1);
-  }
-};
+// La función connectDB ahora se importa de config/database.js
 
 // Rutas
 app.use('/api/test', testRoutes);
@@ -153,16 +146,16 @@ const startServer = async () => {
   // Verificar configuración de email después de conectar
   emailService.verifyConnection().then(isValid => {
     if (isValid) {
-      console.log('✅ Configuración de email correcta');
+      logger.info('✅ Configuración de email correcta');
     } else {
-      console.log('❌ Error en configuración de email');
+      logger.info('❌ Error en configuración de email');
     }
   });
   
   app.listen(PORT, () => {
-    console.log(`🚀 Servidor ejecutándose en puerto ${PORT}`);
-    console.log(`📍 URL: http://localhost:${PORT}`);
-    console.log(`🌍 Entorno: ${DATABASE_CONFIG.NODE_ENV}`);
+    logger.info(`🚀 Servidor ejecutándose en puerto ${PORT}`);
+    logger.info(`📍 URL: http://localhost:${PORT}`);
+    logger.info(`🌍 Entorno: ${config.server.env}`);
   });
 };
 

@@ -7,7 +7,7 @@ import {
   regenerateToken,
   validateToken
 } from '../controllers/tokenController.js';
-import { protect, authorize } from '../middleware/auth.js';
+import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -16,7 +16,6 @@ router.get('/validate/:token', validateToken);
 
 // Todas las demás rutas requieren autenticación
 router.use(protect);
-router.use(authorize());
 
 router.get('/', getTokens);
 router.post('/generate/:retreatId', generateTokensForRetreat);

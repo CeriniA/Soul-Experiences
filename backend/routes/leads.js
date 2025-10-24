@@ -7,7 +7,7 @@ import {
   deleteLead,
   getLeadStats
 } from '../controllers/leadController.js';
-import { protect, authorize } from '../middleware/auth.js';
+import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -16,7 +16,6 @@ router.post('/', createLead);
 
 // Rutas protegidas (admin dashboard)
 router.use(protect); // Todas las rutas siguientes requieren autenticación
-router.use(authorize()); // Usuario autenticado
 
 router.get('/', getLeads);
 router.get('/stats/overview', getLeadStats);

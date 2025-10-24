@@ -1,5 +1,5 @@
 import userService from '../services/userService.js';
-import { APP_CONFIG } from '../config/database.js';
+import { config } from '../config/index.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import AppError from '../utils/AppError.js';
 
@@ -15,8 +15,8 @@ export const login = asyncHandler(async (req, res) => {
   // Opciones de cookie parametrizadas por variables de entorno
   const cookieOptions = {
     httpOnly: true,
-    secure: APP_CONFIG.COOKIE_SECURE,
-    sameSite: APP_CONFIG.COOKIE_SAMESITE,
+    secure: config.cookies.secure,
+    sameSite: config.cookies.sameSite,
     path: '/',
     maxAge: thirtyDaysMs,
   };
@@ -41,8 +41,8 @@ export const logout = asyncHandler(async (req, res) => {
   // Limpiar la cookie usando las mismas opciones relevantes
   res.clearCookie('token', {
     httpOnly: true,
-    secure: APP_CONFIG.COOKIE_SECURE,
-    sameSite: APP_CONFIG.COOKIE_SAMESITE,
+    secure: config.cookies.secure,
+    sameSite: config.cookies.sameSite,
     path: '/',
   });
   res.json(result);

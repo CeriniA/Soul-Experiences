@@ -1,31 +1,27 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import AppError from '../utils/AppError.js';
+import logger from '../utils/logger.js';
 
-// Extraer token desde Authorization Bearer o cookie 'token'
+/**
+ * Extraer token JWT desde Authorization Bearer header o cookie
+ * Requiere cookie-parser middleware configurado en server.js
+ * @param {Request} req - Express request object
+ * @returns {string|undefined} Token JWT o undefined si no existe
+ */
 function extractToken(req) {
-  // 1) Header Authorization: Bearer <token>
+  // 1) Authorization header: Bearer <token>
   const auth = req.headers.authorization || '';
   if (auth.toLowerCase().startsWith('bearer ')) {
     const parts = auth.split(' ');
-    if (parts.length === 2 && parts[1]) return parts[1].trim();
+    if (parts.length === 2 && parts[1]) {
+      return parts[1].trim();
+    }
   }
 
-  // 2) Cookie 'token'
-  const rawCookie = req.headers.cookie || '';
-  if (rawCookie) {
-    // Buscar par token=...
-    const pairs = rawCookie.split(';');
-    for (const pair of pairs) {
-      const idx = pair.indexOf('=');
-      if (idx > -1) {
-        const key = pair.slice(0, idx).trim();
-        const val = pair.slice(idx + 1);
-        if (key === 'token') {
-          try { return decodeURIComponent(val || ''); } catch { return val || ''; }
-        }
-      }
-    }
+  // 2) Cookie 'token' (usando cookie-parser)
+  if (req.cookies && req.cookies.token) {
+    return req.cookies.token;
   }
 
   return undefined;
@@ -34,13 +30,13 @@ function extractToken(req) {
 // Middleware para verificar token JWT
 export const protect = async (req, res, next) => {
   try {
-    console.log('🔐 PROTECT MIDDLEWARE - Método:', req.method, 'URL:', req.url);
-    console.log('🔑 Authorization header:', req.headers.authorization);
+    logger.debug('🔐 PROTECT MIDDLEWARE - Método:', req.method, 'URL:', req.url);
+    logger.debug('🔑 Authorization header:', req.headers.authorization);
     
     const token = extractToken(req);
 
     if (!token) {
-      console.log('❌ No token found');
+      logger.debug('❌ No token found');
       return next(AppError.unauthorized('No autorizado, token requerido'));
     }
 
@@ -67,23 +63,15 @@ export const protect = async (req, res, next) => {
   }
 };
 
-// Middleware para verificar que el usuario esté autenticado (ya no necesitamos verificar roles)
-export const authorize = () => {
-  return (req, res, next) => {
-    console.log('👤 AUTHORIZE MIDDLEWARE - Usuario autenticado:', req.user?.email);
-    
-    // Si llegamos aquí, el usuario ya pasó por el middleware protect
-    // Por lo tanto, está autenticado y es administrador por defecto
-    console.log('✅ Autorización exitosa');
-    next();
-  };
-};
-
-// Middleware opcional - no falla si no hay token
+/**
+ * Middleware opcional - no falla si no hay token
+ * Útil para rutas que pueden ser públicas o privadas
+ * Si hay token válido, establece req.user, si no, continúa sin usuario
+ */
 export const optionalAuth = async (req, res, next) => {
   try {
-    console.log('🔓 OPTIONAL AUTH - URL:', req.url);
-    console.log('🔑 Authorization header:', req.headers.authorization);
+    logger.debug('🔓 OPTIONAL AUTH - URL:', req.url);
+    logger.debug('🔑 Authorization header:', req.headers.authorization);
     
     const token = extractToken(req);
 
@@ -94,20 +82,20 @@ export const optionalAuth = async (req, res, next) => {
         
         if (user) {
           req.user = user;
-          console.log('✅ Usuario establecido en optionalAuth:', user.email);
+          logger.debug('✅ Usuario establecido en optionalAuth:', user.email);
         } else {
-          console.log('❌ Usuario no encontrado');
+          logger.debug('❌ Usuario no encontrado');
         }
       } catch (error) {
-        console.log('❌ Error verificando token en optionalAuth:', error.message);
+        logger.debug('❌ Error verificando token en optionalAuth:', error.message);
         // Si el token es inválido, simplemente continúa sin usuario
       }
     }
 
-    console.log('👤 req.user después de optionalAuth:', req.user ? req.user.email : 'null');
+    logger.debug('👤 req.user después de optionalAuth:', req.user ? req.user.email : 'null');
     next();
   } catch (error) {
-    console.log('❌ Error en optionalAuth:', error.message);
+    logger.debug('❌ Error en optionalAuth:', error.message);
     next(error);
   }
 };

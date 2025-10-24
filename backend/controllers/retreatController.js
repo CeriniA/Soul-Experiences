@@ -1,6 +1,7 @@
 import retreatService from '../services/retreatService.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import AppError from '../utils/AppError.js';
+import logger from '../utils/logger.js';
 
 // @desc    Obtener todos los retiros
 // @route   GET /api/retreats
@@ -44,11 +45,11 @@ export const createRetreat = asyncHandler(async (req, res) => {
 // @route   PUT /api/retreats/:id
 // @access  Private (Admin)
 export const updateRetreat = asyncHandler(async (req, res) => {
-  console.log('🔄 UPDATE RETREAT - ID:', req.params.id);
-  console.log('📤 Datos recibidos:', JSON.stringify(req.body, null, 2));
+  logger.debug('🔄 UPDATE RETREAT - ID:', req.params.id);
+  logger.debug('📤 Datos recibidos:', JSON.stringify(req.body, null, 2));
   
   const result = await retreatService.updateRetreat(req.params.id, req.body);
-  console.log('✅ Retiro actualizado exitosamente');
+  logger.debug('✅ Retiro actualizado exitosamente');
   res.json(result);
 });
 

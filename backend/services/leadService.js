@@ -2,6 +2,7 @@ import Lead from '../models/Lead.js';
 import Retreat from '../models/Retreat.js';
 import { LEAD_STATUS, PAYMENT_STATUS, countsAsConfirmedParticipant } from '../constants/enums.js';
 import AppError from '../utils/AppError.js';
+import logger from '../utils/logger.js';
 
 /**
  * Servicio para manejar la lógica de negocio de los leads
@@ -240,14 +241,14 @@ class LeadService {
       }
 
       // Log para debugging
-      console.log('📊 ACTUALIZACIÓN DE LEAD:');
-      console.log('   Lead ID:', id);
-      console.log('   Retiro:', updatedLead.retreat?.title);
-      console.log('   Estado anterior:', currentLead.status, '/', currentLead.paymentStatus);
-      console.log('   Estado nuevo:', updatedLead.status, '/', updatedLead.paymentStatus);
-      console.log('   Estaba confirmado:', wasConfirmed);
-      console.log('   Está confirmado ahora:', isConfirmedNow);
-      console.log('   Cambio en disponibilidad:', wasConfirmed !== isConfirmedNow);
+      logger.debug('📊 ACTUALIZACIÓN DE LEAD:');
+      logger.debug('   Lead ID:', id);
+      logger.debug('   Retiro:', updatedLead.retreat?.title);
+      logger.debug('   Estado anterior:', currentLead.status, '/', currentLead.paymentStatus);
+      logger.debug('   Estado nuevo:', updatedLead.status, '/', updatedLead.paymentStatus);
+      logger.debug('   Estaba confirmado:', wasConfirmed);
+      logger.debug('   Está confirmado ahora:', isConfirmedNow);
+      logger.debug('   Cambio en disponibilidad:', wasConfirmed !== isConfirmedNow);
 
       return {
         success: true,
@@ -287,10 +288,10 @@ class LeadService {
 
       await Lead.findByIdAndDelete(id);
 
-      console.log('🗑️ LEAD ELIMINADO:');
-      console.log('   Lead ID:', id);
-      console.log('   Estaba confirmado:', wasConfirmed);
-      console.log('   Afecta disponibilidad:', wasConfirmed);
+      logger.debug('🗑️ LEAD ELIMINADO:');
+      logger.debug('   Lead ID:', id);
+      logger.debug('   Estaba confirmado:', wasConfirmed);
+      logger.debug('   Afecta disponibilidad:', wasConfirmed);
 
       return {
         success: true,

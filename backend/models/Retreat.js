@@ -35,22 +35,7 @@ const retreatSchema = new mongoose.Schema({
     required: [true, 'La fecha de fin es requerida'],
     validate: {
       validator: function(value) {
-        console.log('🔍 VALIDACIÓN DE FECHAS:');
-        console.log('   startDate:', this.startDate);
-        console.log('   endDate:', value);
-        console.log('   startDate tipo:', typeof this.startDate);
-        console.log('   endDate tipo:', typeof value);
-        console.log('   startDate válida:', this.startDate instanceof Date && !isNaN(this.startDate));
-        console.log('   endDate válida:', value instanceof Date && !isNaN(value));
-        
-        if (this.startDate && value) {
-          console.log('   Comparación (endDate >= startDate):', value >= this.startDate);
-          console.log('   Diferencia en ms:', value.getTime() - this.startDate.getTime());
-        }
-        
-        const result = value >= this.startDate;
-        console.log('   Resultado validación:', result);
-        return result;
+        return value >= this.startDate;
       },
       message: 'La fecha de fin debe ser posterior o igual a la fecha de inicio'
     }

@@ -3,6 +3,7 @@ import Lead from '../models/Lead.js';
 import Retreat from '../models/Retreat.js';
 import emailService from './emailService.js';
 import AppError from '../utils/AppError.js';
+import logger from '../utils/logger.js';
 
 /**
  * Servicio para manejar la lógica de negocio de los tokens de testimonio
@@ -75,7 +76,7 @@ class TokenService {
       const emailResults = { sent: [], failed: [] };
       
       try {
-        console.log(`📧 Enviando ${tokens.length} emails...`);
+        logger.debug(`📧 Enviando ${tokens.length} emails...`);
         
         for (const token of tokens) {
           try {
@@ -87,19 +88,19 @@ class TokenService {
               expiresAt: token.expiresAt
             });
             emailResults.sent.push(token.email);
-            console.log(`✅ Email enviado a: ${token.email}`);
+            logger.debug(`✅ Email enviado a: ${token.email}`);
           } catch (emailError) {
             emailResults.failed.push({
               email: token.email,
               error: emailError.message
             });
-            console.error(`❌ Error enviando email a ${token.email}:`, emailError.message);
+            logger.error(`❌ Error enviando email a ${token.email}:`, emailError.message);
           }
         }
         
-        console.log(`📊 Resultados: ${emailResults.sent.length} enviados, ${emailResults.failed.length} fallidos`);
+        logger.debug(`📊 Resultados: ${emailResults.sent.length} enviados, ${emailResults.failed.length} fallidos`);
       } catch (error) {
-        console.error('❌ Error en proceso de envío de emails:', error);
+        logger.error('❌ Error en proceso de envío de emails:', error);
       }
 
       return {

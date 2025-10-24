@@ -10,7 +10,7 @@ import {
   deleteTestimonial,
   getFeaturedTestimonials
 } from '../controllers/testimonialController.js';
-import { protect, authorize, optionalAuth } from '../middleware/auth.js';
+import { protect, optionalAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -23,7 +23,6 @@ router.get('/', optionalAuth, getTestimonials); // Debe estar después de las ru
 
 // Rutas protegidas (admin dashboard)
 router.use(protect); // Todas las rutas siguientes requieren autenticación
-router.use(authorize()); // Usuario autenticado
 
 router.post('/', createTestimonial);
 router.get('/:id', getTestimonial);

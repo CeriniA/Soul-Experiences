@@ -1,6 +1,7 @@
 import Testimonial from '../models/Testimonial.js';
 import TestimonialToken from '../models/TestimonialToken.js';
 import AppError from '../utils/AppError.js';
+import logger from '../utils/logger.js';
 
 /**
  * Servicio para manejar la lógica de negocio de los testimonios
@@ -27,7 +28,7 @@ class TestimonialService {
         sort = '-createdAt' 
       } = { ...filters, ...options };
       
-      console.log('📊 getAllTestimonials - Parámetros recibidos:', { isApproved, isFeatured, user: user ? 'Autenticado' : 'No autenticado' });
+      logger.debug('📊 getAllTestimonials - Parámetros recibidos:', { isApproved, isFeatured, user: user ? 'Autenticado' : 'No autenticado' });
       
       // Construir filtros
       const filter = {};
@@ -35,25 +36,25 @@ class TestimonialService {
       // Para usuarios no autenticados, solo mostrar aprobados
       if (!user) {
         filter.isApproved = true;
-        console.log('👤 Usuario NO autenticado - Forzando isApproved=true');
+        logger.debug('👤 Usuario NO autenticado - Forzando isApproved=true');
       } else {
-        console.log('🔐 Usuario autenticado - Permitiendo filtros personalizados');
+        logger.debug('🔐 Usuario autenticado - Permitiendo filtros personalizados');
         // Para admin, permitir filtrar por aprobación
         if (isApproved !== undefined && isApproved !== '') {
           // Convertir string a booleano correctamente
           if (isApproved === 'false' || isApproved === false) {
             filter.isApproved = false;
-            console.log('✅ Filtro aplicado: isApproved = false (pendientes)');
+            logger.debug('✅ Filtro aplicado: isApproved = false (pendientes)');
           } else if (isApproved === 'true' || isApproved === true) {
             filter.isApproved = true;
-            console.log('✅ Filtro aplicado: isApproved = true (aprobados)');
+            logger.debug('✅ Filtro aplicado: isApproved = true (aprobados)');
           }
         } else {
-          console.log('ℹ️ Sin filtro de aprobación - mostrando todos');
+          logger.debug('ℹ️ Sin filtro de aprobación - mostrando todos');
         }
       }
       
-      console.log('🔍 Filtro final aplicado:', filter);
+      logger.debug('🔍 Filtro final aplicado:', filter);
       
       if (isFeatured !== undefined && isFeatured !== '') {
         filter.isFeatured = isFeatured === 'true';

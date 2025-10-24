@@ -2,6 +2,7 @@ import Retreat from '../models/Retreat.js';
 import Lead from '../models/Lead.js';
 import AppError from '../utils/AppError.js';
 import mongoose from 'mongoose';
+import logger from '../utils/logger.js';
 
 /**
  * Servicio para manejar la lógica de negocio de los retiros
@@ -160,8 +161,8 @@ class RetreatService {
    */
   async updateRetreat(id, updateData) {
     try {
-      console.log('🔄 Actualizando retiro:', id);
-      console.log('📦 Datos recibidos:', JSON.stringify(updateData, null, 2));
+      logger.debug('🔄 Actualizando retiro:', id);
+      logger.debug('📦 Datos recibidos:', JSON.stringify(updateData, null, 2));
       
       // Limpiar datos: convertir strings vacíos en undefined para campos numéricos
       const cleanedData = { ...updateData };
@@ -182,7 +183,7 @@ class RetreatService {
         delete cleanedData.policies;
       }
       
-      console.log('🧹 Datos limpiados:', JSON.stringify(cleanedData, null, 2));
+      logger.debug('🧹 Datos limpiados:', JSON.stringify(cleanedData, null, 2));
       
       // Obtener retiro actual para validar con todos los datos
       const currentRetreat = await Retreat.findById(id);
