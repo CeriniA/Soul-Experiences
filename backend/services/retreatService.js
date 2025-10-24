@@ -49,9 +49,10 @@ class RetreatService {
       const filter = {};
       if (status) filter.status = status;
       
-      // Para usuarios no autenticados, solo mostrar retiros activos
+      // Para usuarios no autenticados, solo mostrar retiros activos Y futuros
       if (!user) {
         filter.status = 'active';
+        filter.endDate = { $gte: new Date() }; // Solo retiros que no han terminado
       }
 
       // Ejecutar consulta con paginación
@@ -281,18 +282,18 @@ class RetreatService {
    */
   async getActiveRetreat() {
     try {
-      // Primero buscar retiros activos marcados para mostrar en hero
+      // Primero buscar retiros activos marcados para mostrar en hero (que no han terminado)
       let retreat = await Retreat.findOne({ 
         status: 'active',
         showInHero: true,
-        startDate: { $gte: new Date() }
+        endDate: { $gte: new Date() } // Solo retiros que no han terminado
       }).sort({ startDate: 1 });
 
       // Si no hay retiros activos con showInHero, buscar cualquier retiro activo
       if (!retreat) {
         retreat = await Retreat.findOne({ 
           status: 'active',
-          startDate: { $gte: new Date() }
+          endDate: { $gte: new Date() } // Solo retiros que no han terminado
         }).sort({ startDate: 1 });
       }
 
@@ -343,10 +344,10 @@ class RetreatService {
    */
   async getHeroData() {
     try {
-      // Buscar todos los retiros activos futuros
+      // Buscar todos los retiros activos futuros (que no han terminado)
       const activeRetreats = await Retreat.find({ 
         status: 'active',
-        startDate: { $gte: new Date() }
+        endDate: { $gte: new Date() } // Solo retiros que no han terminado
       }).sort({ startDate: 1 });
 
       // Priorizar retiros con showInHero: true

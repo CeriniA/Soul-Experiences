@@ -221,6 +221,36 @@ retreatSchema.virtual('effectivePrice').get(function() {
   return this.price;
 });
 
+// Virtual para calcular el estado real del retiro basado en fechas
+retreatSchema.virtual('computedStatus').get(function() {
+  const now = new Date();
+  
+  // Respetar status manual para draft y cancelled
+  if (this.status === 'draft' || this.status === 'cancelled') {
+    return this.status;
+  }
+  
+  // Calcular automáticamente basado en fechas
+  if (!this.startDate || !this.endDate) {
+    return this.status; // Fallback al status manual si no hay fechas
+  }
+  
+  if (this.endDate < now) {
+    return 'completed'; // Retiro terminó
+  } else if (this.startDate <= now && now <= this.endDate) {
+    return 'in_progress'; // Retiro en curso
+  } else if (this.startDate > now) {
+    return 'upcoming'; // Retiro próximo
+  }
+  
+  return this.status; // Fallback
+});
+
+// Método helper para verificar si está disponible para reservar
+retreatSchema.methods.isAvailableForBooking = function() {
+  return this.computedStatus === 'upcoming' && this.availableSpots > 0;
+};
+
 // Índices para mejorar rendimiento
 retreatSchema.index({ status: 1, startDate: 1 });
 retreatSchema.index({ slug: 1 });
