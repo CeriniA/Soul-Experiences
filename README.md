@@ -1,112 +1,140 @@
-# Soul Experiences - Plataforma de Retiros de Bienestar
+# Soul Experiences - API RESTful con CRUD y Capa de Servicios
 
 ## 📋 Descripción del Proyecto
 
-Soul Experiences es una plataforma web completa para la gestión y promoción de retiros de transformación y autoconocimiento. El proyecto incluye:
+Soul Experiences es una API RESTful completa desarrollada con Node.js, Express y MongoDB que implementa un sistema de gestión de retiros de bienestar. El proyecto aplica el patrón de **separación de responsabilidades** mediante una arquitectura de capas (Modelos, Servicios, Controladores) y cumple con todos los requisitos del trabajo práctico.
 
-- **Landing Page moderna** con navegación por scroll suave y secciones dinámicas
-- **Panel de administración completo** para gestionar retiros, testimonios, leads y configuraciones
-- **Sistema de gestión de imágenes** integrado con Cloudinary
-- **Formularios públicos** para registro de interesados y envío de testimonios
-- **Diseño responsive** optimizado para todos los dispositivos
+### Características Principales
+- **API RESTful** con operaciones CRUD completas
+- **Arquitectura de capas** con separación clara de responsabilidades
+- **Relaciones entre entidades** usando referencias de MongoDB y populate
+- **Autenticación JWT** con cookies HttpOnly
+- **Encriptación bcrypt** para contraseñas
+- **Variables de entorno** para configuración sensible
+- **Frontend React** como cliente de la API
 
-## 🛠️ Stack Tecnológico
+## 🛠️ Tecnologías Utilizadas
 
-- **Frontend**: React + Vite + React Router + Bootstrap
-- **Backend**: Node.js + Express + MongoDB (Mongoose)
-- **Autenticación**: JWT con Cookies HttpOnly + Context API
-- **Encriptación**: bcrypt para contraseñas
-- **Imágenes**: Cloudinary (upload y optimización automática)
-- **UI/UX**: React Icons, Swiper, Animaciones CSS personalizadas
-- **Tipografía**: Roca Two (títulos), Montserrat (cuerpo)
-- **Seguridad**: CORS, Helmet, Variables de entorno, Cookies HttpOnly (SameSite/secure), Protected Routes
+### Backend (API)
+- **Node.js** v18+ - Runtime de JavaScript
+- **Express** v4.18+ - Framework web
+- **MongoDB** v6+ - Base de datos NoSQL
+- **Mongoose** v7+ - ODM para MongoDB
+- **JWT (jsonwebtoken)** - Autenticación basada en tokens
+- **bcrypt** - Encriptación de contraseñas
+- **dotenv** - Gestión de variables de entorno
+- **cors** - Manejo de CORS
+- **helmet** - Seguridad HTTP headers
+- **cookie-parser** - Parseo de cookies
+
+### Frontend (Cliente)
+- **React** v18+ - Librería UI
+- **Vite** - Build tool
+- **React Router** v6 - Enrutamiento
+- **Axios** - Cliente HTTP
+- **Bootstrap** v5 - Framework CSS
 
 ## 🏗️ Arquitectura del Proyecto
 
-### Estructura de Directorios
+### Estructura de Directorios (Backend)
+
+El proyecto sigue la estructura requerida por el TP con separación clara de responsabilidades:
 
 ```
-soul-experiences/
-├── frontend/                    # Aplicación React con Vite
-│   ├── src/
-│   │   ├── components/         # Componentes reutilizables
-│   │   │   ├── admin/         # Panel de administración
-│   │   │   │   ├── leads/     # Gestión de leads
-│   │   │   │   ├── retreats/  # Gestión de retiros
-│   │   │   │   └── testimonials/ # Gestión de testimonios
-│   │   │   └── sections/      # Secciones de la landing page
-│   │   │       ├── HeroSection.jsx
-│   │   │       ├── AboutSection.jsx
-│   │   │       ├── RetreatsSection.jsx
-│   │   │       ├── ServicesSection.jsx
-│   │   │       ├── TestimonialsSection.jsx
-│   │   │       ├── ContactSection.jsx
-│   │   │       └── FaqSection.jsx
-│   │   ├── pages/             # Páginas principales
-│   │   │   ├── LandingPage.jsx
-│   │   │   ├── RetreatDetailPage.jsx
-│   │   │   └── PublicTestimonialPage.jsx
-│   │   ├── services/          # Servicios para API calls
-│   │   │   ├── api.js         # Cliente Axios configurado
-│   │   │   └── cloudinary.js  # Servicio de imágenes
-│   │   ├── contexts/          # Context API
-│   │   │   └── AuthContext.jsx
-│   │   ├── hooks/             # Custom hooks
-│   │   ├── utils/             # Utilidades
-│   │   ├── constants/         # Constantes y enums
-│   │   └── assets/            # Recursos estáticos
-│   │       ├── fonts/         # Tipografías personalizadas
-│   │       ├── ILUSTRACIONES/ # Ilustraciones SVG
-│   │       └── CLARISA/       # Fotos de Clarisa
-│   └── public/                # Archivos públicos y videos
-├── backend/                    # API REST con Express
-│   ├── models/                # Modelos de MongoDB (Mongoose)
-│   │   ├── Retreat.js         # Modelo de retiros
-│   │   ├── Testimonial.js     # Modelo de testimonios
-│   │   ├── Lead.js            # Modelo de leads
-│   │   ├── User.js            # Modelo de usuarios
-│   │   ├── Settings.js        # Configuraciones del sitio
-│   │   └── TestimonialToken.js # Tokens para testimonios
-│   ├── services/              # Capa de servicios (lógica de negocio)
-│   │   ├── retreatService.js
-│   │   ├── testimonialService.js
-│   │   ├── leadService.js
-│   │   └── userService.js
-│   ├── controllers/           # Controladores HTTP
-│   │   ├── retreatController.js
-│   │   ├── testimonialController.js
-│   │   ├── leadController.js
-│   │   ├── authController.js
-│   │   └── settingsController.js
-│   ├── routes/                # Definición de rutas de la API
-│   ├── middleware/            # Middlewares personalizados
-│   │   └── auth.js            # Protección de rutas
-│   ├── config/                # Configuraciones
-│   │   └── db.js              # Conexión a MongoDB
-│   └── scripts/               # Scripts utilitarios
-└── README.md                  # Este archivo
+backend/
+├── server.js                   # Punto de entrada de la aplicación
+├── .env                        # Variables de entorno
+├── package.json
+└── src/
+    ├── models/                 # Modelos de MongoDB (Mongoose)
+    │   ├── Retreat.js          # Entidad principal (Productos)
+    │   ├── Testimonial.js      # Entidad relacionada (Categorías)
+    │   ├── Lead.js             # Entidad adicional
+    │   ├── User.js             # Usuarios y autenticación
+    │   ├── Settings.js         # Configuraciones
+    │   └── TestimonialToken.js # Tokens de acceso
+    │
+    ├── services/               # Capa de Servicios (Lógica de Negocio)
+    │   ├── retreatService.js   # Lógica de retiros
+    │   ├── testimonialService.js # Lógica de testimonios
+    │   ├── leadService.js      # Lógica de leads
+    │   └── userService.js      # Lógica de autenticación
+    │
+    ├── controllers/            # Controladores (Manejo HTTP)
+    │   ├── retreatController.js
+    │   ├── testimonialController.js
+    │   ├── leadController.js
+    │   ├── authController.js
+    │   └── settingsController.js
+    │
+    ├── routes/                 # Definición de rutas
+    │   ├── retreats.js
+    │   ├── testimonials.js
+    │   ├── leads.js
+    │   ├── auth.js
+    │   ├── settings.js
+    │   └── tokens.js
+    │
+    ├── middleware/             # Middlewares personalizados
+    │   ├── auth.js             # Verificación JWT
+    │   └── errorHandler.js     # Manejo de errores
+    │
+    ├── config/                 # Configuraciones
+    │   ├── db.js               # Conexión a MongoDB
+    │   └── index.js            # Configuración centralizada
+    │
+    └── utils/                  # Utilidades
+        ├── AppError.js         # Clase de errores
+        ├── asyncHandler.js     # Wrapper async
+        └── logger.js           # Logger condicional
 ```
 
 ### Separación de Responsabilidades (Patrón de Capas)
 
-El proyecto implementa una **arquitectura de capas** que separa claramente las responsabilidades:
+El proyecto implementa una **arquitectura de capas** que separa claramente las responsabilidades según los requisitos del TP:
 
-1. **Capa de Presentación** (Controllers): Maneja las solicitudes HTTP y respuestas
-2. **Capa de Lógica de Negocio** (Services): Contiene toda la lógica de negocio y validaciones
-3. **Capa de Acceso a Datos** (Models): Interactúa directamente con MongoDB
+#### 1. **Capa de Modelos** (`models/`)
+- Define los esquemas de MongoDB con Mongoose
+- Implementa validaciones a nivel de base de datos
+- Contiene métodos de instancia (ej: `comparePassword`, `generateAuthToken`)
+- Hooks de Mongoose (ej: `pre('save')` para hashear contraseñas con bcrypt)
+
+#### 2. **Capa de Servicios** (`services/`) - **OBLIGATORIA**
+- **Contiene TODA la lógica de negocio**
+- Realiza las llamadas directas a Mongoose/MongoDB
+- Implementa validaciones complejas
+- Maneja transformaciones de datos
+- Lanza errores personalizados (AppError)
+- **Los controladores NUNCA acceden directamente a los modelos**
+
+#### 3. **Capa de Controladores** (`controllers/`)
+- **Ligeros y sin lógica de negocio**
+- Manejan la solicitud HTTP (Request)
+- Delegan toda la lógica al Servicio correspondiente
+- Gestionan la respuesta HTTP (Response)
+- Manejan códigos de estado HTTP apropiados (200, 201, 400, 404, 500)
+- Implementan try/catch para manejo de errores
 
 ## 📊 Esquema de Base de Datos
 
-### Entidades Principales
+### Colecciones de MongoDB
 
-#### Retiros (Productos)
+La base de datos `clari-retiros` contiene las siguientes colecciones:
+
+#### 1. **Retreats** (Entidad Principal - equivalente a "Productos")
+
+**Descripción**: Representa los retiros de bienestar ofrecidos.
+
 ```javascript
 {
-  title: String,                    // Título del retiro
-  description: String,              // Descripción detallada
-  shortDescription: String,         // Descripción corta para cards
-  startDate: Date,                  // Fecha de inicio
-  endDate: Date,                    // Fecha de fin
+  _id: ObjectId,
+  title: String,                    // Nombre del retiro (requerido)
+  description: String,              // Descripción detallada (requerido)
+  shortDescription: String,         // Descripción corta
+  
+  // Fechas y ubicación
+  startDate: Date,                  // Fecha de inicio (requerido)
+  endDate: Date,                    // Fecha de fin (requerido)
   location: {                       // Ubicación completa
     name: String,
     address: String,
@@ -115,14 +143,20 @@ El proyecto implementa una **arquitectura de capas** que separa claramente las r
     country: String,
     coordinates: { lat: Number, lng: Number }
   },
-  price: Number,                    // Precio base
-  currency: String,                 // Moneda (ARS, USD, etc.)
-  images: [String],                 // URLs de imágenes (Cloudinary)
-  heroImageIndex: Number,           // Índice de imagen para hero (0-based)
-  status: String,                   // active, draft, completed, cancelled
+  
+  // Precio e inventario
+  price: Number,                    // Precio base (requerido)
+  currency: String,                 // Moneda (default: 'ARS')
+  maxParticipants: Number,          // Cupos totales
+  availableSpots: Number,           // Cupos disponibles
+  
+  // Estado y visibilidad
+  status: String,                   // 'active', 'draft', 'completed', 'cancelled'
   showInHero: Boolean,              // Mostrar en hero de landing
-  maxParticipants: Number,
-  availableSpots: Number,
+  
+  // Multimedia
+  images: [String],                 // URLs de imágenes
+  heroImageIndex: Number,           // Índice de imagen principal
   
   // Información detallada
   whoIsItFor: [String],             // Para quién es el retiro
@@ -131,52 +165,113 @@ El proyecto implementa una **arquitectura de capas** que separa claramente las r
   notIncludes: [String],            // Qué no incluye
   foodDetails: String,              // Detalles de alimentación
   accommodationDetails: String,     // Detalles de alojamiento
+  cancellationPolicy: String,       // Políticas de cancelación
   
-  // Políticas
-  cancellationPolicy: String
+  // Campos virtuales (calculados)
+  computedStatus: String,           // Estado calculado dinámicamente
+  slug: String,                     // URL-friendly identifier
+  
+  // Timestamps automáticos
+  createdAt: Date,
+  updatedAt: Date
 }
 ```
 
-#### Testimonios (Relación con Retiros)
+**Validaciones**:
+- `title`: requerido, mínimo 3 caracteres
+- `description`: requerido
+- `startDate` y `endDate`: requeridos, endDate debe ser >= startDate
+- `price`: requerido, mínimo 0
+- `status`: enum ['draft', 'active', 'completed', 'cancelled']
+
+---
+
+#### 2. **Testimonials** (Entidad Relacionada - equivalente a "Categorías")
+
+**Descripción**: Testimonios de participantes asociados a retiros específicos.
+
+**Relación**: Cada testimonio referencia un `Retreat` mediante ObjectId.
+
 ```javascript
 {
-  participantName: String,
-  participantEmail: String,
-  retreat: ObjectId,      // Referencia a Retreat (populate)
-  rating: Number,         // 1-5 estrellas
-  comment: String,
-  isApproved: Boolean,
-  isFeatured: Boolean
+  _id: ObjectId,
+  participantName: String,          // Nombre del participante (requerido)
+  participantEmail: String,         // Email del participante (requerido)
+  retreat: ObjectId,                // REFERENCIA a Retreat (requerido)
+  rating: Number,                   // Calificación 1-5 estrellas (requerido)
+  comment: String,                  // Comentario del testimonio (requerido)
+  isApproved: Boolean,              // Aprobado por admin (default: false)
+  isFeatured: Boolean,              // Destacado en landing (default: false)
+  createdAt: Date,
+  updatedAt: Date
 }
 ```
 
-#### Usuarios (Administradores)
+**Validaciones**:
+- `participantName`: requerido
+- `participantEmail`: requerido, formato email válido
+- `retreat`: requerido, debe existir en la colección Retreats
+- `rating`: requerido, entre 1 y 5
+- `comment`: requerido, mínimo 10 caracteres
+
+**Populate**: Al consultar testimonios, se hace populate del campo `retreat` para incluir información completa del retiro.
+
+---
+
+#### 3. **Users** (Usuarios - Autenticación)
+
+**Descripción**: Administradores del sistema con autenticación JWT.
+
 ```javascript
 {
-  name: String,
-  email: String,
-  password: String,       // Hasheado con bcrypt
-  isActive: Boolean
+  _id: ObjectId,
+  name: String,                     // Nombre completo (requerido)
+  email: String,                    // Email único (requerido)
+  password: String,                 // Contraseña hasheada con bcrypt (requerido)
+  lastLogin: Date,                  // Último inicio de sesión
+  createdAt: Date,
+  updatedAt: Date
 }
 ```
 
-#### Leads (Interesados)
+**Seguridad**:
+- Contraseña hasheada con bcrypt (10 salt rounds) mediante pre-save hook
+- Método `comparePassword(password)` para validar credenciales
+- Método `generateAuthToken()` para crear JWT
+- Campo `password` excluido por defecto en queries (select: false)
+
+---
+
+#### 4. **Leads** (Interesados)
+
+**Descripción**: Registro de personas interesadas en los retiros.
+
+**Relación**: Cada lead puede referenciar un `Retreat` específico.
+
 ```javascript
 {
-  name: String,
-  email: String,
-  phone: String,
-  retreat: ObjectId,      // Referencia a Retreat
-  message: String,
-  status: String,         // new, contacted, converted, lost
-  source: String,         // landing, facebook, instagram, etc.
-  createdAt: Date
+  _id: ObjectId,
+  name: String,                     // Nombre completo (requerido)
+  email: String,                    // Email (requerido)
+  phone: String,                    // Teléfono
+  retreat: ObjectId,                // REFERENCIA a Retreat (opcional)
+  message: String,                  // Mensaje del interesado
+  status: String,                   // 'new', 'contacted', 'converted', 'lost'
+  source: String,                   // Origen del lead
+  createdAt: Date,
+  updatedAt: Date
 }
 ```
 
-#### Settings (Configuración del Sitio)
+---
+
+#### 5. **Settings** (Configuración del Sitio)
+
+**Descripción**: Configuración global del sitio (singleton).
+
 ```javascript
 {
+  _id: ObjectId,
   aboutMe: {
     title: String,
     content: String,
@@ -193,185 +288,291 @@ El proyecto implementa una **arquitectura de capas** que separa claramente las r
     title: String,
     description: String,
     keywords: [String]
+  },
+  updatedAt: Date
+}
+```
+
+---
+
+#### 6. **TestimonialTokens** (Tokens de Acceso)
+
+**Descripción**: Tokens únicos para que participantes envíen testimonios.
+
+**Relación**: Cada token referencia un `Retreat`.
+
+```javascript
+{
+  _id: ObjectId,
+  token: String,                    // Token único (UUID)
+  email: String,                    // Email del participante
+  participantName: String,          // Nombre del participante
+  retreat: ObjectId,                // REFERENCIA a Retreat
+  isUsed: Boolean,                  // Si ya fue utilizado
+  usedAt: Date,                     // Fecha de uso
+  expiresAt: Date,                  // Fecha de expiración (30 días)
+  createdAt: Date
+}
+```
+
+---
+
+### Relaciones entre Entidades
+
+```
+Retreats (1) ──────< (N) Testimonials
+   │
+   │
+   └──────< (N) Leads
+   │
+   └──────< (N) TestimonialTokens
+```
+
+**Uso de Populate**:
+- `Testimonial.find().populate('retreat')` - Incluye datos del retiro
+- `Lead.find().populate('retreat')` - Incluye datos del retiro
+- `TestimonialToken.findOne().populate('retreat')` - Incluye datos del retiro
+
+## 🚀 Cómo Correr el Proyecto
+
+### Prerrequisitos
+
+- **Node.js** v18 o superior
+- **MongoDB** (local o MongoDB Atlas)
+- **npm** o **yarn**
+- **Git**
+
+### Paso 1: Clonar el Repositorio
+
+```bash
+git clone https://github.com/tu-usuario/soul-experiences.git
+cd soul-experiences
+```
+
+### Paso 2: Configurar Variables de Entorno
+
+Crear archivo `.env` en la carpeta `backend/`:
+
+```env
+# Conexión a MongoDB
+MONGODB_URI=mongodb://localhost:27017/clari-retiros
+# O usar MongoDB Atlas:
+# MONGODB_URI=mongodb+srv://usuario:password@cluster.mongodb.net/clari-retiros
+
+# JWT Secret (cambiar por una clave segura)
+JWT_SECRET=mi_clave_secreta_super_segura_123456
+JWT_EXPIRE=30d
+
+# Puerto del servidor
+PORT=5001
+
+# Entorno
+NODE_ENV=development
+
+# CORS - Origen del frontend
+FRONTEND_ORIGIN=http://localhost:3000
+
+# Cookies (desarrollo)
+COOKIE_SAMESITE=lax
+COOKIE_SECURE=false
+
+# Email (opcional - para notificaciones)
+EMAIL_USER=tu_correo@gmail.com
+EMAIL_PASSWORD=tu_app_password
+```
+
+### Paso 3: Instalar Dependencias del Backend
+
+```bash
+cd backend
+npm install
+```
+
+### Paso 4: Ejecutar el Backend
+
+```bash
+# Modo desarrollo (con nodemon)
+npm run dev
+
+# O modo producción
+npm start
+```
+
+El servidor estará corriendo en `http://localhost:5001`
+
+### Paso 5: Instalar y Ejecutar el Frontend (Opcional)
+
+El frontend es un cliente React para consumir la API.
+
+```bash
+cd ../frontend
+npm install
+
+# Crear .env en frontend/
+echo "VITE_API_URL=http://localhost:5001/api" > .env
+
+# Ejecutar
+npm run dev
+```
+
+El frontend estará disponible en `http://localhost:3000`
+
+### Paso 6: Crear Usuario Administrador
+
+Para acceder al panel de administración, crear un usuario admin:
+
+```bash
+# Hacer POST a /api/auth/create-admin
+curl -X POST http://localhost:5001/api/auth/create-admin \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Admin",
+    "email": "admin@soulexperiences.com",
+    "password": "admin123"
+  }'
+```
+
+O usar Postman/Insomnia para hacer la petición.
+
+## 🛟️ Listado de Endpoints (Rutas)
+
+Base URL: `http://localhost:5001/api`
+
+### 🔐 Autenticación
+
+| Método | Endpoint | Descripción | Autenticación |
+|--------|----------|-------------|---------------|
+| POST | `/auth/login` | Iniciar sesión | No |
+| POST | `/auth/create-admin` | Crear administrador (solo si no existe) | No |
+| GET | `/auth/me` | Obtener perfil del usuario | Sí (JWT) |
+| POST | `/auth/logout` | Cerrar sesión | Sí (JWT) |
+| PUT | `/auth/change-password` | Cambiar contraseña | Sí (JWT) |
+
+---
+
+### 🏞️ Retiros (Entidad Principal - CRUD Completo)
+
+#### Rutas Públicas
+
+| Método | Endpoint | Descripción | Autenticación |
+|--------|----------|-------------|---------------|
+| GET | `/retreats` | Listar todos los retiros | No |
+| GET | `/retreats/:id` | Obtener retiro por ID o slug | No |
+| GET | `/retreats/active/current` | Obtener retiro activo para hero | No |
+| GET | `/retreats/past` | Obtener retiros pasados (máx 6) | No |
+| GET | `/retreats/hero-data` | Obtener datos para hero de landing | No |
+
+#### Rutas Protegidas (Admin)
+
+| Método | Endpoint | Descripción | Autenticación |
+|--------|----------|-------------|---------------|
+| POST | `/retreats` | **Crear** nuevo retiro | Sí (JWT) |
+| PUT | `/retreats/:id` | **Actualizar** retiro | Sí (JWT) |
+| DELETE | `/retreats/:id` | **Eliminar** retiro | Sí (JWT) |
+
+---
+
+### ⭐ Testimonios (Entidad Relacionada - CRUD Completo)
+
+**Relación**: Cada testimonio referencia un `Retreat` (populate automático)
+
+#### Rutas Públicas
+
+| Método | Endpoint | Descripción | Autenticación |
+|--------|----------|-------------|---------------|
+| GET | `/testimonials/featured/public` | Obtener testimonios destacados | No |
+| POST | `/testimonials/submit/:token` | Enviar testimonio con token | No |
+| GET | `/tokens/validate/:token` | Validar token de testimonio | No |
+
+#### Rutas Protegidas (Admin)
+
+| Método | Endpoint | Descripción | Autenticación |
+|--------|----------|-------------|---------------|
+| GET | `/testimonials` | **Listar** todos los testimonios (con populate) | Sí (JWT) |
+| GET | `/testimonials/:id` | **Obtener** testimonio por ID | Sí (JWT) |
+| POST | `/testimonials` | **Crear** testimonio | Sí (JWT) |
+| PUT | `/testimonials/:id` | **Actualizar** testimonio | Sí (JWT) |
+| DELETE | `/testimonials/:id` | **Eliminar** testimonio | Sí (JWT) |
+
+---
+
+### 📝 Leads (Interesados)
+
+**Relación**: Cada lead puede referenciar un `Retreat`
+
+| Método | Endpoint | Descripción | Autenticación |
+|--------|----------|-------------|---------------|
+| POST | `/leads` | Crear nuevo lead (formulario público) | No |
+| GET | `/leads` | Listar todos los leads | Sí (JWT) |
+| GET | `/leads/:id` | Obtener lead por ID | Sí (JWT) |
+| PUT | `/leads/:id` | Actualizar lead | Sí (JWT) |
+| DELETE | `/leads/:id` | Eliminar lead | Sí (JWT) |
+| GET | `/leads/stats/overview` | Obtener estadísticas | Sí (JWT) |
+
+---
+
+### 🎫 Tokens de Testimonios
+
+| Método | Endpoint | Descripción | Autenticación |
+|--------|----------|-------------|---------------|
+| POST | `/tokens/generate/:retreatId` | Generar token para retiro | Sí (JWT) |
+| GET | `/tokens` | Listar todos los tokens | Sí (JWT) |
+| DELETE | `/tokens/:id` | Eliminar token | Sí (JWT) |
+| POST | `/tokens/:id/regenerate` | Regenerar token expirado | Sí (JWT) |
+
+---
+
+### ⚙️ Settings (Configuración)
+
+| Método | Endpoint | Descripción | Autenticación |
+|--------|----------|-------------|---------------|
+| GET | `/settings/public` | Obtener configuración pública | No |
+| GET | `/settings` | Obtener configuración completa | Sí (JWT) |
+| PUT | `/settings` | Actualizar configuración | Sí (JWT) |
+
+## 📝 Ejemplos de Datos Mock (JSON)
+
+### 1. Login (POST /api/auth/login)
+
+```json
+{
+  "email": "admin@soulexperiences.com",
+  "password": "admin123"
+}
+```
+
+**Respuesta exitosa:**
+```json
+{
+  "success": true,
+  "message": "Login exitoso",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "64f8b2c1234567890abcdef0",
+    "name": "Admin",
+    "email": "admin@soulexperiences.com"
   }
 }
 ```
 
-#### Testimonial Tokens (Tokens para Testimonios)
-```javascript
-{
-  token: String,          // Token único
-  email: String,          // Email del participante
-  participantName: String,
-  retreat: ObjectId,      // Referencia a Retreat
-  isUsed: Boolean,        // Estado del token
-  usedAt: Date,           // Fecha de uso (si aplica)
-  expiresAt: Date         // Expira (por defecto 30 días)
-}
+---
+
+### 2. Crear Retiro (POST /api/retreats) 🔒
+
+**Headers requeridos:**
+```
+Content-Type: application/json
+Cookie: token=<JWT_TOKEN>
 ```
 
-## 🚀 Instalación y Configuración
-
-### Prerrequisitos
-
-- Node.js (v18 o superior)
-- MongoDB (local o MongoDB Atlas)
-- Cuenta de Cloudinary (para imágenes)
-- npm o yarn
-
-### 1. Clonar el Repositorio
-
-```bash
-git clone [URL_DEL_REPOSITORIO]
-cd soul-experiences
-```
-
-### 2. Configurar Backend
-
-```bash
-cd backend
-npm install
-```
-
-Crear archivo `.env` en la carpeta `backend` (desarrollo):
-
-```env
-# MongoDB
-MONGODB_URI=mongodb://localhost:27017/clari-retiros
-
-# JWT
-JWT_SECRET=tu_jwt_secret_muy_seguro
-JWT_EXPIRE=7d
-
-# Email (si usas Gmail, App Password sin espacios)
-EMAIL_USER=tu_correo@gmail.com
-EMAIL_PASSWORD=tu_app_password
-
-# Servidor
-PORT=5001
-NODE_ENV=development
-
-# Origen del frontend (CORS) y cookies (dev)
-FRONTEND_ORIGIN=http://localhost:3000
-COOKIE_SAMESITE=lax
-COOKIE_SECURE=false
-```
-
-Variables de producción (en Render u hosting del backend):
-
-```env
-NODE_ENV=production
-FRONTEND_ORIGIN=https://clariweb.onrender.com
-COOKIE_SAMESITE=none
-COOKIE_SECURE=true
-MONGODB_URI=<tu_uri_prod>
-JWT_SECRET=<tu_secreto_prod>
-```
-
-### 3. Configurar Frontend
-
-```bash
-cd frontend
-npm install
-```
-
-Crear archivo `.env` en la carpeta `frontend` (desarrollo):
-
-```env
-VITE_API_URL=http://localhost:5001/api
-VITE_CLOUDINARY_CLOUD_NAME=tu_cloud_name
-VITE_CLOUDINARY_UPLOAD_PRESET=tu_upload_preset
-```
-
-Variables de producción (en hosting del frontend):
-
-```env
-VITE_API_URL=https://soul-experiences.onrender.com/api
-```
-
-### 4. Ejecutar el Proyecto
-
-**Backend:**
-```bash
-cd backend
-npm run dev
-```
-
-**Frontend:**
-```bash
-cd frontend
-npm run dev
-```
-
-## 🛣️ Endpoints de la API
-
-### Autenticación
-- `POST /api/auth/login` - Iniciar sesión (setea cookie HttpOnly de sesión)
-- `GET /api/auth/me` - Obtener perfil del usuario (requiere cookie)
-- `POST /api/auth/logout` - Cerrar sesión (borra cookie)
-- `PUT /api/auth/change-password` - Cambiar contraseña
-- `POST /api/auth/create-admin` - Crear administrador (solo si no existe)
-
-### Retiros (CRUD Completo)
-**Públicos:**
-- `GET /api/retreats` - Obtener todos los retiros
-- `GET /api/retreats/:id` - Obtener retiro por ID
-- `GET /api/retreats/active/current` - Obtener retiro activo para hero
-- `GET /api/retreats/past` - Obtener retiros pasados (máx 6)
-- `GET /api/retreats/hero-data` - Obtener datos para hero
-
-**Protegidos (Admin):**
-- `POST /api/retreats` - Crear nuevo retiro
-- `PUT /api/retreats/:id` - Actualizar retiro
-- `DELETE /api/retreats/:id` - Eliminar retiro
-
-### Testimonios (CRUD Completo con Relación)
-**Públicos:**
-- `GET /api/testimonials/featured/public` - Obtener testimonios destacados
-- `POST /api/testimonials/submit/:token` - Enviar testimonio con token
-- `GET /api/testimonials/validate/:token` - Validar token
-
-**Protegidos (Admin):**
-- `GET /api/testimonials` - Obtener todos los testimonios (con populate)
-- `GET /api/testimonials/:id` - Obtener testimonio por ID
-- `POST /api/testimonials` - Crear testimonio
-- `PUT /api/testimonials/:id` - Actualizar testimonio
-- `DELETE /api/testimonials/:id` - Eliminar testimonio
-
-### Leads (Gestión de Interesados)
-**Públicos:**
-- `POST /api/leads` - Crear nuevo lead desde formulario
-
-**Protegidos (Admin):**
-- `GET /api/leads` - Obtener todos los leads
-- `GET /api/leads/:id` - Obtener lead por ID
-- `PUT /api/leads/:id` - Actualizar lead
-- `DELETE /api/leads/:id` - Eliminar lead
-- `GET /api/leads/stats` - Obtener estadísticas de leads
-
-### Tokens de Testimonios
-**Protegidos (Admin):**
-- `POST /api/tokens/generate` - Generar token para testimonio
-- `GET /api/tokens` - Obtener todos los tokens
-- `DELETE /api/tokens/:id` - Eliminar token
-
-### Settings (Configuración del Sitio)
-**Públicos:**
-- `GET /api/settings` - Obtener configuración pública
-
-**Protegidos (Admin):**
-- `PUT /api/settings` - Actualizar configuración
-
-## 📝 Ejemplos de Datos Mock
-
-### Crear Retiro (POST /api/retreats)
+**Body:**
 ```json
 {
-  "title": "Retiro de Yoga y Meditación",
-  "description": "Un retiro transformador en la naturaleza",
-  "shortDescription": "Conecta con tu ser interior",
-  "startDate": "2024-12-15T00:00:00.000Z",
-  "endDate": "2024-12-20T00:00:00.000Z",
+  "title": "Retiro de Yoga y Meditación en las Sierras",
+  "description": "Un retiro transformador de 5 días en la naturaleza, donde conectarás con tu ser interior a través de prácticas de yoga, meditación y actividades de autoconocimiento.",
+  "shortDescription": "Conecta con tu ser interior en las sierras",
+  "startDate": "2025-03-15T00:00:00.000Z",
+  "endDate": "2025-03-20T00:00:00.000Z",
   "location": {
     "name": "Centro de Retiros Montaña Sagrada",
     "address": "Ruta Provincial 123, KM 45",
@@ -382,42 +583,141 @@ npm run dev
   "price": 150000,
   "currency": "ARS",
   "maxParticipants": 20,
-  "images": [
-    "https://res.cloudinary.com/tu-cloud/image/upload/v123/retiro1.jpg"
+  "availableSpots": 20,
+  "status": "active",
+  "whoIsItFor": [
+    "Personas que buscan reconectar con su esencia",
+    "Quienes desean iniciar un camino de autoconocimiento"
   ],
-  "status": "active"
+  "experiences": [
+    "Yoga matutino",
+    "Meditación guiada",
+    "Caminatas conscientes",
+    "Círculos de palabra"
+  ],
+  "includes": [
+    "Alojamiento compartido",
+    "Todas las comidas",
+    "Materiales de yoga"
+  ],
+  "notIncludes": [
+    "Transporte al retiro",
+    "Seguro de viaje"
+  ]
 }
 ```
 
-### Crear Testimonio (POST /api/testimonials)
+**Respuesta exitosa (201):**
+```json
+{
+  "success": true,
+  "message": "Retiro creado exitosamente",
+  "data": {
+    "_id": "64f8b2c1234567890abcdef1",
+    "title": "Retiro de Yoga y Meditación en las Sierras",
+    "slug": "retiro-de-yoga-y-meditacion-en-las-sierras",
+    "computedStatus": "upcoming",
+    ...
+  }
+}
+```
+
+---
+
+### 3. Crear Testimonio (POST /api/testimonials) 🔒
+
+**Body:**
 ```json
 {
   "participantName": "María González",
   "participantEmail": "maria@email.com",
   "retreat": "64f8b2c1234567890abcdef1",
   "rating": 5,
-  "comment": "Una experiencia transformadora que cambió mi vida",
+  "comment": "Una experiencia transformadora que cambió mi vida. El entorno natural, las prácticas de yoga y la conexión con el grupo fueron increíbles.",
   "isApproved": true,
   "isFeatured": true
 }
 ```
 
-### Crear Lead (POST /api/leads)
+**Respuesta exitosa (201):**
 ```json
 {
-  "name": "María González",
-  "email": "maria@email.com",
+  "success": true,
+  "message": "Testimonio creado exitosamente",
+  "data": {
+    "_id": "64f8b2c1234567890abcdef2",
+    "participantName": "María González",
+    "retreat": {
+      "_id": "64f8b2c1234567890abcdef1",
+      "title": "Retiro de Yoga y Meditación en las Sierras",
+      "startDate": "2025-03-15T00:00:00.000Z"
+    },
+    "rating": 5,
+    ...
+  }
+}
+```
+
+---
+
+### 4. Crear Lead (POST /api/leads)
+
+**Body:**
+```json
+{
+  "name": "Juan Pérez",
+  "email": "juan.perez@email.com",
   "phone": "+54 9 11 1234-5678",
   "retreat": "64f8b2c1234567890abcdef1",
-  "message": "Hola, me interesa reservar una plaza para el próximo retiro.",
-  "interest": "consulta",
+  "message": "Hola, me interesa reservar una plaza para el próximo retiro. ¿Tienen disponibilidad?",
   "source": "landing"
 }
 ```
 
-Notas:
-- El campo `retreat` referencia al mismo ID usado en los mocks de Retiro y Testimonio para mantener coherencia.
-- Los demás campos no requeridos (por ejemplo `paymentStatus`, `paymentAmount`, `paymentMethod`, `notes`) tienen valores por defecto según el esquema y pueden omitirse al crear.
+**Respuesta exitosa (201):**
+```json
+{
+  "success": true,
+  "message": "Lead creado exitosamente",
+  "data": {
+    "_id": "64f8b2c1234567890abcdef3",
+    "name": "Juan Pérez",
+    "status": "new",
+    ...
+  }
+}
+```
+
+---
+
+### 5. Listar Testimonios con Populate (GET /api/testimonials) 🔒
+
+**Respuesta:**
+```json
+{
+  "success": true,
+  "count": 2,
+  "data": [
+    {
+      "_id": "64f8b2c1234567890abcdef2",
+      "participantName": "María González",
+      "retreat": {
+        "_id": "64f8b2c1234567890abcdef1",
+        "title": "Retiro de Yoga y Meditación",
+        "startDate": "2025-03-15T00:00:00.000Z",
+        "location": {
+          "name": "Centro de Retiros Montaña Sagrada"
+        }
+      },
+      "rating": 5,
+      "comment": "Una experiencia transformadora...",
+      "isApproved": true
+    }
+  ]
+}
+```
+
+**Nota**: El campo `retreat` se expande automáticamente con `populate()` para incluir información completa del retiro asociado.
 
 ## 🔐 Seguridad Implementada
 
@@ -526,20 +826,49 @@ const token = await TestimonialToken.findOne({ token: tokenString })
 - ✅ **Logging** de errores en servidor
 - ✅ **Feedback visual** de errores en frontend
 
-## 🚀 Scripts Disponibles
+---
 
-### Backend
-- `npm run dev` - Ejecutar en modo desarrollo con nodemon
-- `npm start` - Ejecutar en producción
+## 📄 Licencia
 
-### Frontend
-- `npm run dev` - Servidor de desarrollo con Vite
-- `npm run build` - Construir para producción
-- `npm run preview` - Vista previa de la build
+Este proyecto fue desarrollado como parte del Trabajo Práctico de la materia de Desarrollo de Aplicaciones Web.
 
-## 📱 Funcionalidades Principales
+---
 
-### 🌐 Sitio Público (Landing Page)
+**Desarrollado por**: Adrián Cerini  
+**Repositorio**: [GitHub - Soul Experiences](https://github.com/tu-usuario/soul-experiences)  
+**Año**: 2024-2025
+
+---
+
+## 📚 Recursos Adicionales
+
+El proyecto incluye un **cliente frontend en React** que consume la API. Para más información sobre las funcionalidades del frontend, consultar la documentación en la carpeta `frontend/`.
+
+### Características del Frontend:
+- Landing page con scroll suave entre secciones
+- Panel de administración completo
+- Integración con Cloudinary para gestión de imágenes
+- Diseño responsive con Bootstrap
+- Autenticación con Context API
+
+---
+
+## 🌐 Demo y Deployment
+
+**Backend (API)**: https://soul-experiences.onrender.com/api  
+**Frontend**: https://clariweb.onrender.com
+
+---
+
+## 📞 Contacto
+
+Para consultas sobre el proyecto:
+- **Email**: adriancerini@example.com
+- **GitHub**: [@CeriniA](https://github.com/tu-usuario)
+
+---
+
+### 🌐 Funcionalidades del Sitio Público (Landing Page)
 
 #### Hero Section Dinámico
 - **Carrusel automático** de retiros activos y pasados
@@ -726,41 +1055,3 @@ const token = await TestimonialToken.findOne({ token: tokenString })
 - **Variables de entorno** para datos sensibles
 - **Sanitización** de inputs en formularios
 
-## 🚀 Roadmap Futuro
-
-### Funcionalidades Planeadas
-- [ ] Sistema de pagos integrado (Mercado Pago / Stripe)
-- [ ] Notificaciones por email automatizadas
-- [ ] Chat en vivo para consultas
-- [ ] Blog/Artículos sobre bienestar
-- [ ] Galería de fotos de retiros pasados
-- [ ] Sistema de reviews públicos
-- [ ] Integración con Google Calendar
-- [ ] Newsletter con Mailchimp
-- [ ] Analytics dashboard mejorado
-- [ ] PWA (Progressive Web App)
-
-### Mejoras Técnicas
-- [ ] Tests unitarios y de integración
-- [ ] CI/CD con GitHub Actions
-- [ ] Docker para desarrollo
-- [ ] Monitoreo con Sentry
-- [ ] Logs estructurados
-- [ ] Rate limiting en API
-- [ ] WebSockets para notificaciones en tiempo real
-
-## 🤝 Contribución
-
-1. Fork el proyecto
-2. Crear una rama para tu feature (`git checkout -b feature/nueva-funcionalidad`)
-3. Commit tus cambios (`git commit -m 'Agregar nueva funcionalidad'`)
-4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
-5. Abrir un Pull Request
-
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE.md](LICENSE.md) para detalles.
-
----
-
-**Desarrollado con ❤️ para Soul Experiences**
