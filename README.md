@@ -51,7 +51,7 @@ backend/
     │   ├── Testimonial.js      # Entidad relacionada (Categorías)
     │   ├── Lead.js             # Entidad adicional
     │   ├── User.js             # Usuarios y autenticación
-    │   ├── Settings.js         # Configuraciones
+    │   ├── Setting.js          # Configuración (singleton)
     │   └── TestimonialToken.js # Tokens de acceso
     │
     ├── services/               # Capa de Servicios (Lógica de Negocio)
@@ -128,61 +128,109 @@ La base de datos `clari-retiros` contiene las siguientes colecciones:
 ```javascript
 {
   _id: ObjectId,
-  title: String,                    // Nombre del retiro (requerido)
-  description: String,              // Descripción detallada (requerido)
-  shortDescription: String,         // Descripción corta
   
-  // Fechas y ubicación
+  // Información básica
+  title: String,                    // Nombre del retiro (requerido, max 100 chars)
+  description: String,              // Descripción detallada (requerido, max 2000 chars)
+  shortDescription: String,         // Descripción corta (max 300 chars)
+  
+  // Público objetivo y experiencias
+  targetAudience: [String],         // Para quién es este retiro
+  experiences: [String],            // Actividades/experiencias del retiro
+  
+  // Fechas
   startDate: Date,                  // Fecha de inicio (requerido)
-  endDate: Date,                    // Fecha de fin (requerido)
-  location: {                       // Ubicación completa
-    name: String,
-    address: String,
+  endDate: Date,                    // Fecha de fin (requerido, >= startDate)
+  
+  // Ubicación completa
+  location: {
+    name: String,                   // Nombre del lugar (requerido)
+    address: String,                // Dirección (requerido)
     city: String,
     state: String,
-    country: String,
-    coordinates: { lat: Number, lng: Number }
+    country: String,                // Default: 'Argentina'
+    description: String,            // Descripción del lugar
+    features: [String],             // Características (ej: "2 hectáreas", "piscina")
+    accommodationType: String,      // Tipo de alojamiento
+    howToGetThere: {
+      byBus: String,
+      byCar: String,
+      additionalInfo: String
+    }
   },
   
-  // Precio e inventario
-  price: Number,                    // Precio base (requerido)
-  currency: String,                 // Moneda (default: 'ARS')
-  maxParticipants: Number,          // Cupos totales
-  availableSpots: Number,           // Cupos disponibles
+  // Precio
+  price: Number,                    // Precio base (requerido, min 0)
+  currency: String,                 // 'ARS' | 'USD' | 'EUR' (default: 'ARS')
   
-  // Estado y visibilidad
-  status: String,                   // 'active', 'draft', 'completed', 'cancelled'
-  showInHero: Boolean,              // Mostrar en hero de landing
+  // Precios escalonados (descuentos por fecha)
+  pricingTiers: [{
+    name: String,                   // ej: "Descuento anticipado"
+    price: Number,
+    validUntil: Date,
+    paymentOptions: [String]        // ej: ["Un pago", "3 cuotas de $X"]
+  }],
+  
+  // Capacidad
+  maxParticipants: Number,          // Cupos totales (requerido, 1-100)
+  
+  // Qué incluye
+  includes: [String],               // ej: ["Alojamiento", "Comidas"]
+  notIncludes: [String],            // ej: ["Traslados", "Extras"]
+  
+  // Alimentación
+  foodInfo: {
+    foodType: String,               // ej: "Crudivegana, 100% orgánica"
+    description: String,
+    restrictions: [String]          // ej: ["Sin gluten", "Sin lácteos"]
+  },
+  
+  // Políticas
+  policies: {
+    substanceFree: Boolean,         // Default: false
+    restrictions: [String],         // ej: ["Sin tabaco", "Sin alcohol"]
+    cancellationPolicy: String,
+    additionalPolicies: [String]
+  },
   
   // Multimedia
   images: [String],                 // URLs de imágenes
-  heroImageIndex: Number,           // Índice de imagen principal
+  heroImageIndex: Number,           // Índice de imagen para hero (default: 0)
+  highlightWords: [String],         // Palabras a resaltar en el título
   
-  // Información detallada
-  whoIsItFor: [String],             // Para quién es el retiro
-  experiences: [String],            // Actividades incluidas
-  includes: [String],               // Qué incluye
-  notIncludes: [String],            // Qué no incluye
-  foodDetails: String,              // Detalles de alimentación
-  accommodationDetails: String,     // Detalles de alojamiento
-  cancellationPolicy: String,       // Políticas de cancelación
+  // Estado y visibilidad
+  status: String,                   // 'draft' | 'active' | 'completed' | 'cancelled'
+  showInHero: Boolean,              // Mostrar en hero (default: false)
   
-  // Campos virtuales (calculados)
-  computedStatus: String,           // Estado calculado dinámicamente
-  slug: String,                     // URL-friendly identifier
+  // Contacto
+  whatsappNumber: String,           // WhatsApp específico del retiro
   
-  // Timestamps automáticos
+  // SEO
+  slug: String,                     // URL-friendly (único, generado automáticamente)
+  
+  // Timestamps
   createdAt: Date,
   updatedAt: Date
 }
 ```
 
+**Campos Virtuales** (calculados, no en DB):
+- `durationDays`: Duración en días (calculado de startDate - endDate)
+- `isFull`: Si está lleno (currentParticipants >= maxParticipants)
+- `availableSpots`: Cupos disponibles (maxParticipants - currentParticipants)
+- `activePricingTier`: Tier de precio activo por fecha
+- `effectivePrice`: Precio efectivo (tier activo o precio base)
+- `computedStatus`: Estado calculado basado en fechas ('upcoming', 'in_progress', 'completed')
+
 **Validaciones**:
-- `title`: requerido, mínimo 3 caracteres
-- `description`: requerido
-- `startDate` y `endDate`: requeridos, endDate debe ser >= startDate
+- `title`: requerido, max 100 caracteres
+- `description`: requerido, max 2000 caracteres
+- `startDate` y `endDate`: requeridos, endDate >= startDate
 - `price`: requerido, mínimo 0
+- `maxParticipants`: requerido, entre 1 y 100
 - `status`: enum ['draft', 'active', 'completed', 'cancelled']
+- `currency`: enum ['ARS', 'USD', 'EUR']
+- `heroImageIndex`: debe ser < images.length
 
 ---
 
@@ -195,26 +243,50 @@ La base de datos `clari-retiros` contiene las siguientes colecciones:
 ```javascript
 {
   _id: ObjectId,
-  participantName: String,          // Nombre del participante (requerido)
-  participantEmail: String,         // Email del participante (requerido)
+  
+  // Datos del participante
+  participantName: String,          // Nombre (requerido, max 100 chars)
+  participantEmail: String,         // Email (formato válido)
+  participantPhoto: String,         // URL de foto (opcional)
+  
+  // Relación con retiro
   retreat: ObjectId,                // REFERENCIA a Retreat (requerido)
-  rating: Number,                   // Calificación 1-5 estrellas (requerido)
-  comment: String,                  // Comentario del testimonio (requerido)
+  
+  // Calificación y comentario
+  rating: Number,                   // 1-5 estrellas (requerido)
+  comment: String,                  // Comentario (requerido, max 1000 chars)
+  
+  // Estado
   isApproved: Boolean,              // Aprobado por admin (default: false)
   isFeatured: Boolean,              // Destacado en landing (default: false)
+  
+  // Token usado (si aplica)
+  token: String,                    // Token usado para crear (sparse index)
+  
+  // Fechas
+  approvedAt: Date,                 // Fecha de aprobación
   createdAt: Date,
-  updatedAt: Date
+  updatedAt: Date,
+  
+  // Notas internas
+  notes: String                     // Notas del admin (max 500 chars)
 }
 ```
 
+**Campos Virtuales**:
+- `stars`: Representación visual de rating (ej: '⭐⭐⭐⭐⭐')
+
 **Validaciones**:
-- `participantName`: requerido
-- `participantEmail`: requerido, formato email válido
-- `retreat`: requerido, debe existir en la colección Retreats
+- `participantName`: requerido, max 100 caracteres
+- `participantEmail`: formato email válido
+- `retreat`: requerido, debe existir en Retreats
 - `rating`: requerido, entre 1 y 5
-- `comment`: requerido, mínimo 10 caracteres
+- `comment`: requerido, max 1000 caracteres
+- `notes`: max 500 caracteres
 
 **Populate**: Al consultar testimonios, se hace populate del campo `retreat` para incluir información completa del retiro.
+
+**Middleware**: Actualiza `approvedAt` automáticamente cuando `isApproved` cambia a `true`.
 
 ---
 
@@ -225,20 +297,33 @@ La base de datos `clari-retiros` contiene las siguientes colecciones:
 ```javascript
 {
   _id: ObjectId,
-  name: String,                     // Nombre completo (requerido)
-  email: String,                    // Email único (requerido)
-  password: String,                 // Contraseña hasheada con bcrypt (requerido)
+  name: String,                     // Nombre completo (requerido, max 50 chars)
+  email: String,                    // Email único (requerido, formato válido)
+  password: String,                 // Contraseña hasheada (requerido, min 6 chars, select: false)
   lastLogin: Date,                  // Último inicio de sesión
+  passwordChangedAt: Date,          // Fecha de último cambio de contraseña
   createdAt: Date,
   updatedAt: Date
 }
 ```
 
+**Métodos de Instancia**:
+- `comparePassword(candidatePassword)`: Compara contraseña con bcrypt
+- `generateAuthToken()`: Genera JWT con id y email (expiración configurable)
+
+**Métodos Estáticos**:
+- `createDefaultAdmin(adminData)`: Crea admin por defecto si no existe
+
 **Seguridad**:
-- Contraseña hasheada con bcrypt (10 salt rounds) mediante pre-save hook
-- Método `comparePassword(password)` para validar credenciales
-- Método `generateAuthToken()` para crear JWT
+- Contraseña hasheada con bcrypt (12 salt rounds) mediante pre-save hook
 - Campo `password` excluido por defecto en queries (select: false)
+- JWT firmado con `JWT_SECRET` del .env
+- Validación de email único
+
+**Validaciones**:
+- `name`: requerido, max 50 caracteres
+- `email`: requerido, único, formato válido
+- `password`: requerido, mínimo 6 caracteres
 
 ---
 
@@ -246,52 +331,144 @@ La base de datos `clari-retiros` contiene las siguientes colecciones:
 
 **Descripción**: Registro de personas interesadas en los retiros.
 
-**Relación**: Cada lead puede referenciar un `Retreat` específico.
+**Relación**: Cada lead referencia un `Retreat` específico.
 
 ```javascript
 {
   _id: ObjectId,
-  name: String,                     // Nombre completo (requerido)
-  email: String,                    // Email (requerido)
-  phone: String,                    // Teléfono
-  retreat: ObjectId,                // REFERENCIA a Retreat (opcional)
-  message: String,                  // Mensaje del interesado
-  status: String,                   // 'new', 'contacted', 'converted', 'lost'
-  source: String,                   // Origen del lead
+  
+  // Datos básicos
+  name: String,                     // Nombre completo (requerido, max 100 chars)
+  email: String,                    // Email (requerido, formato válido)
+  phone: String,                    // Teléfono (requerido)
+  
+  // Mensaje/consulta
+  message: String,                  // Mensaje (max 500 chars)
+  
+  // Tipo de interés
+  interest: String,                 // 'reservar' | 'info' | 'consulta' (default: 'consulta')
+  
+  // Estado del lead
+  status: String,                   // 'nuevo' | 'contactado' | 'interesado' | 'confirmado' | 'descartado'
+  
+  // Estado del pago
+  paymentStatus: String,            // 'pendiente' | 'seña' | 'completo' (default: 'pendiente')
+  
+  // Información de pago
+  paymentAmount: Number,            // Monto pagado (default: 0, min: 0)
+  paymentMethod: String,            // '' | 'transferencia' | 'mercadopago' | 'efectivo'
+  
+  // Retiro de interés
+  retreat: ObjectId,                // REFERENCIA a Retreat (requerido)
+  
+  // Notas internas
+  notes: String,                    // Notas del admin (max 1000 chars)
+  
+  // Fuente del lead
+  source: String,                   // 'landing' | 'instagram' | 'facebook' | 'referido' | 'otro'
+  
+  // Fechas
+  contactedAt: Date,                // Fecha de contacto
+  confirmedAt: Date,                // Fecha de confirmación
   createdAt: Date,
   updatedAt: Date
 }
 ```
 
+**Campos Virtuales**:
+- `isConfirmed`: true si status === 'confirmado' && paymentStatus === 'completo'
+
+**Validaciones**:
+- `name`: requerido, max 100 caracteres
+- `email`: requerido, formato válido
+- `phone`: requerido
+- `retreat`: requerido
+- `message`: max 500 caracteres
+- `notes`: max 1000 caracteres
+- `paymentAmount`: mínimo 0
+- `status`: enum ['nuevo', 'contactado', 'interesado', 'confirmado', 'descartado']
+- `paymentStatus`: enum ['pendiente', 'seña', 'completo']
+- `paymentMethod`: enum ['', 'transferencia', 'mercadopago', 'efectivo']
+- `interest`: enum ['reservar', 'info', 'consulta']
+- `source`: enum ['landing', 'instagram', 'facebook', 'referido', 'otro']
+
+**Índice Único**: Combinación de `email` + `retreat` (evita duplicados)
+
 ---
 
 #### 5. **Settings** (Configuración del Sitio)
 
-**Descripción**: Configuración global del sitio (singleton).
+**Descripción**: Configuración global del sitio (singleton - solo una configuración activa).
 
 ```javascript
 {
   _id: ObjectId,
-  aboutMe: {
-    title: String,
-    content: String,
-    images: [String]
-  },
-  contact: {
-    email: String,
-    phone: String,
-    whatsapp: String,
+  
+  // Información del facilitador
+  facilitatorName: String,          // Nombre (requerido, max 100 chars)
+  facilitatorBio: String,           // Biografía (max 1000 chars)
+  facilitatorPhoto: String,         // URL de foto
+  
+  // Información de contacto
+  contactEmail: String,             // Email (requerido, formato válido)
+  whatsappNumber: String,           // WhatsApp (requerido)
+  
+  // Redes sociales
+  socialMedia: {
     instagram: String,
-    facebook: String
+    facebook: String,
+    youtube: String,
+    website: String
   },
-  seo: {
-    title: String,
-    description: String,
-    keywords: [String]
+  
+  // Configuración del sitio
+  siteTitle: String,                // Título (default: 'Retiros Espirituales', max 100 chars)
+  siteDescription: String,          // Descripción (max 200 chars)
+  siteLogo: String,                 // URL del logo
+  
+  // Configuración de emails
+  emailSettings: {
+    fromName: String,               // Default: 'Retiros Espirituales'
+    fromEmail: String,
+    replyTo: String
   },
+  
+  // Textos personalizables
+  customTexts: {
+    heroTitle: String,              // Default: 'Transforma tu vida...'
+    heroSubtitle: String,
+    ctaButton: String,              // Default: 'Quiero Reservar Mi Plaza'
+    thankYouMessage: String
+  },
+  
+  // Tema de colores
+  theme: {
+    primaryColor: String,           // Default: '#2E8B57'
+    secondaryColor: String,         // Default: '#F4A460'
+    accentColor: String             // Default: '#8A2BE2'
+  },
+  
+  // Configuración activa
+  isActive: Boolean,                // Default: true (solo una puede ser true)
+  
+  createdAt: Date,
   updatedAt: Date
 }
 ```
+
+**Métodos Estáticos**:
+- `getActive()`: Obtiene la configuración activa
+- `createDefault(facilitatorData)`: Crea configuración por defecto
+
+**Validaciones**:
+- `facilitatorName`: requerido, max 100 caracteres
+- `facilitatorBio`: max 1000 caracteres
+- `contactEmail`: requerido, formato válido
+- `whatsappNumber`: requerido
+- `siteTitle`: max 100 caracteres
+- `siteDescription`: max 200 caracteres
+
+**Índice Único**: Solo puede haber una configuración con `isActive: true`
 
 ---
 
@@ -304,16 +481,54 @@ La base de datos `clari-retiros` contiene las siguientes colecciones:
 ```javascript
 {
   _id: ObjectId,
-  token: String,                    // Token único (UUID)
-  email: String,                    // Email del participante
-  participantName: String,          // Nombre del participante
-  retreat: ObjectId,                // REFERENCIA a Retreat
-  isUsed: Boolean,                  // Si ya fue utilizado
+  
+  // Token único
+  token: String,                    // Token único (generado con crypto, 32 bytes hex)
+  
+  // Datos del participante
+  email: String,                    // Email (requerido, lowercase)
+  participantName: String,          // Nombre (requerido)
+  
+  // Retiro asociado
+  retreat: ObjectId,                // REFERENCIA a Retreat (requerido)
+  
+  // Estado del token
+  isUsed: Boolean,                  // Si ya fue utilizado (default: false)
   usedAt: Date,                     // Fecha de uso
-  expiresAt: Date,                  // Fecha de expiración (30 días)
-  createdAt: Date
+  
+  // Expiración
+  expiresAt: Date,                  // Fecha de expiración (default: +30 días)
+  
+  // Testimonio creado
+  testimonial: ObjectId,            // REFERENCIA a Testimonial (si aplica)
+  
+  createdAt: Date,
+  updatedAt: Date
 }
 ```
+
+**Campos Virtuales**:
+- `isExpired`: true si la fecha actual > expiresAt
+- `isValid`: true si !isUsed && !isExpired
+
+**Métodos Estáticos**:
+- `generateForRetreat(retreatId, participants)`: Genera tokens para múltiples participantes
+- `validateToken(tokenString)`: Valida y obtiene token con populate de retreat
+
+**Validaciones**:
+- `token`: requerido, único
+- `email`: requerido
+- `participantName`: requerido
+- `retreat`: requerido
+
+**Middleware**: 
+- Actualiza `usedAt` automáticamente cuando `isUsed` cambia a `true`
+- MongoDB elimina automáticamente tokens expirados (TTL index)
+
+**Índices**:
+- Único en `token`
+- Compuesto en `email` + `retreat`
+- TTL index en `expiresAt` (auto-eliminación)
 
 ---
 
@@ -434,101 +649,79 @@ curl -X POST http://localhost:5001/api/auth/create-admin \
 
 O usar Postman/Insomnia para hacer la petición.
 
-## 🛟️ Listado de Endpoints (Rutas)
+## 🛣️ Endpoints de la API
 
-Base URL: `http://localhost:5001/api`
+**Base URL**: `http://localhost:5001/api`
 
-### 🔐 Autenticación
+### 🔐 Autenticación (`/auth`)
 
-| Método | Endpoint | Descripción | Autenticación |
-|--------|----------|-------------|---------------|
-| POST | `/auth/login` | Iniciar sesión | No |
-| POST | `/auth/create-admin` | Crear administrador (solo si no existe) | No |
-| GET | `/auth/me` | Obtener perfil del usuario | Sí (JWT) |
-| POST | `/auth/logout` | Cerrar sesión | Sí (JWT) |
-| PUT | `/auth/change-password` | Cambiar contraseña | Sí (JWT) |
+| Método | Ruta | Descripción | Auth |
+|--------|------|-------------|------|
+| `POST` | `/login` | Iniciar sesión (retorna JWT en cookie) | ❌ |
+| `POST` | `/create-admin` | Crear primer administrador | ❌ |
+| `GET` | `/me` | Obtener perfil del usuario autenticado | 🔒 |
+| `POST` | `/logout` | Cerrar sesión (limpia cookie) | 🔒 |
+| `PUT` | `/change-password` | Cambiar contraseña | 🔒 |
 
----
+### 🏞️ Retiros (`/retreats`) - **CRUD Completo**
 
-### 🏞️ Retiros (Entidad Principal - CRUD Completo)
+| Método | Ruta | Descripción | Auth |
+|--------|------|-------------|------|
+| `GET` | `/` | Listar todos los retiros | ❌ |
+| `GET` | `/:id` | Obtener retiro por ID o slug | ❌ |
+| `GET` | `/active/current` | Obtener retiro activo para hero | ❌ |
+| `GET` | `/past` | Obtener retiros pasados (máx 6) | ❌ |
+| `GET` | `/hero-data` | Datos para hero de landing | ❌ |
+| `POST` | `/` | **Crear** retiro | 🔒 |
+| `PUT` | `/:id` | **Actualizar** retiro | 🔒 |
+| `DELETE` | `/:id` | **Eliminar** retiro | 🔒 |
 
-#### Rutas Públicas
+### ⭐ Testimonios (`/testimonials`) - **CRUD Completo**
 
-| Método | Endpoint | Descripción | Autenticación |
-|--------|----------|-------------|---------------|
-| GET | `/retreats` | Listar todos los retiros | No |
-| GET | `/retreats/:id` | Obtener retiro por ID o slug | No |
-| GET | `/retreats/active/current` | Obtener retiro activo para hero | No |
-| GET | `/retreats/past` | Obtener retiros pasados (máx 6) | No |
-| GET | `/retreats/hero-data` | Obtener datos para hero de landing | No |
+> **Relación**: Cada testimonio referencia un `Retreat` (populate automático)
 
-#### Rutas Protegidas (Admin)
+| Método | Ruta | Descripción | Auth |
+|--------|------|-------------|------|
+| `GET` | `/featured/public` | Testimonios destacados | ❌ |
+| `POST` | `/submit/:token` | Enviar testimonio con token | ❌ |
+| `GET` | `/` | **Listar** todos (con populate) | 🔒 |
+| `GET` | `/:id` | **Obtener** por ID | 🔒 |
+| `POST` | `/` | **Crear** testimonio | 🔒 |
+| `PUT` | `/:id` | **Actualizar** testimonio | 🔒 |
+| `DELETE` | `/:id` | **Eliminar** testimonio | 🔒 |
 
-| Método | Endpoint | Descripción | Autenticación |
-|--------|----------|-------------|---------------|
-| POST | `/retreats` | **Crear** nuevo retiro | Sí (JWT) |
-| PUT | `/retreats/:id` | **Actualizar** retiro | Sí (JWT) |
-| DELETE | `/retreats/:id` | **Eliminar** retiro | Sí (JWT) |
+### 📝 Leads (`/leads`)
 
----
+> **Relación**: Cada lead referencia un `Retreat`
 
-### ⭐ Testimonios (Entidad Relacionada - CRUD Completo)
+| Método | Ruta | Descripción | Auth |
+|--------|------|-------------|------|
+| `POST` | `/` | Crear lead (formulario público) | ❌ |
+| `GET` | `/` | Listar todos los leads | 🔒 |
+| `GET` | `/:id` | Obtener lead por ID | 🔒 |
+| `PUT` | `/:id` | Actualizar lead | 🔒 |
+| `DELETE` | `/:id` | Eliminar lead | 🔒 |
+| `GET` | `/stats/overview` | Estadísticas de leads | 🔒 |
 
-**Relación**: Cada testimonio referencia un `Retreat` (populate automático)
+### 🎫 Tokens (`/tokens`)
 
-#### Rutas Públicas
+| Método | Ruta | Descripción | Auth |
+|--------|------|-------------|------|
+| `POST` | `/generate/:retreatId` | Generar token para retiro | 🔒 |
+| `GET` | `/validate/:token` | Validar token de testimonio | ❌ |
+| `GET` | `/` | Listar todos los tokens | 🔒 |
+| `DELETE` | `/:id` | Eliminar token | 🔒 |
+| `POST` | `/:id/regenerate` | Regenerar token expirado | 🔒 |
 
-| Método | Endpoint | Descripción | Autenticación |
-|--------|----------|-------------|---------------|
-| GET | `/testimonials/featured/public` | Obtener testimonios destacados | No |
-| POST | `/testimonials/submit/:token` | Enviar testimonio con token | No |
-| GET | `/tokens/validate/:token` | Validar token de testimonio | No |
+### ⚙️ Settings (`/settings`)
 
-#### Rutas Protegidas (Admin)
+| Método | Ruta | Descripción | Auth |
+|--------|------|-------------|------|
+| `GET` | `/public` | Configuración pública | ❌ |
+| `GET` | `/` | Configuración completa | 🔒 |
+| `PUT` | `/` | Actualizar configuración | 🔒 |
 
-| Método | Endpoint | Descripción | Autenticación |
-|--------|----------|-------------|---------------|
-| GET | `/testimonials` | **Listar** todos los testimonios (con populate) | Sí (JWT) |
-| GET | `/testimonials/:id` | **Obtener** testimonio por ID | Sí (JWT) |
-| POST | `/testimonials` | **Crear** testimonio | Sí (JWT) |
-| PUT | `/testimonials/:id` | **Actualizar** testimonio | Sí (JWT) |
-| DELETE | `/testimonials/:id` | **Eliminar** testimonio | Sí (JWT) |
-
----
-
-### 📝 Leads (Interesados)
-
-**Relación**: Cada lead puede referenciar un `Retreat`
-
-| Método | Endpoint | Descripción | Autenticación |
-|--------|----------|-------------|---------------|
-| POST | `/leads` | Crear nuevo lead (formulario público) | No |
-| GET | `/leads` | Listar todos los leads | Sí (JWT) |
-| GET | `/leads/:id` | Obtener lead por ID | Sí (JWT) |
-| PUT | `/leads/:id` | Actualizar lead | Sí (JWT) |
-| DELETE | `/leads/:id` | Eliminar lead | Sí (JWT) |
-| GET | `/leads/stats/overview` | Obtener estadísticas | Sí (JWT) |
-
----
-
-### 🎫 Tokens de Testimonios
-
-| Método | Endpoint | Descripción | Autenticación |
-|--------|----------|-------------|---------------|
-| POST | `/tokens/generate/:retreatId` | Generar token para retiro | Sí (JWT) |
-| GET | `/tokens` | Listar todos los tokens | Sí (JWT) |
-| DELETE | `/tokens/:id` | Eliminar token | Sí (JWT) |
-| POST | `/tokens/:id/regenerate` | Regenerar token expirado | Sí (JWT) |
-
----
-
-### ⚙️ Settings (Configuración)
-
-| Método | Endpoint | Descripción | Autenticación |
-|--------|----------|-------------|---------------|
-| GET | `/settings/public` | Obtener configuración pública | No |
-| GET | `/settings` | Obtener configuración completa | Sí (JWT) |
-| PUT | `/settings` | Actualizar configuración | Sí (JWT) |
+**Leyenda**: ❌ = Público | 🔒 = Requiere JWT (cookie HttpOnly)
 
 ## 📝 Ejemplos de Datos Mock (JSON)
 
@@ -578,14 +771,28 @@ Cookie: token=<JWT_TOKEN>
     "address": "Ruta Provincial 123, KM 45",
     "city": "Villa General Belgrano",
     "state": "Córdoba",
-    "country": "Argentina"
+    "country": "Argentina",
+    "description": "Un espacio sagrado en las sierras de Córdoba",
+    "features": ["2 hectáreas de naturaleza", "Domos geodésicos", "Piscina natural"],
+    "accommodationType": "Cabañas compartidas",
+    "howToGetThere": {
+      "byBus": "Desde terminal de Córdoba, línea X hasta Villa General Belgrano",
+      "byCar": "Ruta 5 hasta KM 45, desvío a la derecha"
+    }
   },
   "price": 150000,
   "currency": "ARS",
+  "pricingTiers": [
+    {
+      "name": "Descuento anticipado",
+      "price": 120000,
+      "validUntil": "2025-02-15T00:00:00.000Z",
+      "paymentOptions": ["Un pago", "3 cuotas de $40.000"]
+    }
+  ],
   "maxParticipants": 20,
-  "availableSpots": 20,
   "status": "active",
-  "whoIsItFor": [
+  "targetAudience": [
     "Personas que buscan reconectar con su esencia",
     "Quienes desean iniciar un camino de autoconocimiento"
   ],
@@ -603,7 +810,20 @@ Cookie: token=<JWT_TOKEN>
   "notIncludes": [
     "Transporte al retiro",
     "Seguro de viaje"
-  ]
+  ],
+  "foodInfo": {
+    "foodType": "Crudivegana, 100% orgánica",
+    "description": "Alimentación consciente preparada con amor",
+    "restrictions": ["Sin gluten", "Sin lácteos", "Sin azúcar refinada"]
+  },
+  "policies": {
+    "substanceFree": true,
+    "restrictions": ["Sin tabaco", "Sin alcohol", "Sin drogas"],
+    "cancellationPolicy": "Reembolso del 50% hasta 15 días antes del retiro"
+  },
+  "highlightWords": ["Yoga", "Meditación", "Sierras"],
+  "showInHero": true,
+  "whatsappNumber": "+54 9 351 123-4567"
 }
 ```
 
@@ -670,6 +890,7 @@ Cookie: token=<JWT_TOKEN>
   "phone": "+54 9 11 1234-5678",
   "retreat": "64f8b2c1234567890abcdef1",
   "message": "Hola, me interesa reservar una plaza para el próximo retiro. ¿Tienen disponibilidad?",
+  "interest": "reservar",
   "source": "landing"
 }
 ```
@@ -682,7 +903,14 @@ Cookie: token=<JWT_TOKEN>
   "data": {
     "_id": "64f8b2c1234567890abcdef3",
     "name": "Juan Pérez",
-    "status": "new",
+    "email": "juan.perez@email.com",
+    "phone": "+54 9 11 1234-5678",
+    "status": "nuevo",
+    "paymentStatus": "pendiente",
+    "interest": "reservar",
+    "source": "landing",
+    "retreat": "64f8b2c1234567890abcdef1",
+    "createdAt": "2025-01-28T20:00:00.000Z",
     ...
   }
 }
@@ -734,22 +962,55 @@ Cookie: token=<JWT_TOKEN>
 
 #### Entidad Principal: Retiros (Productos)
 - **CRUD Completo**: Create, Read, Update, Delete
-- **Campos extensos**: 20+ campos incluyendo información detallada
-- **Validaciones**: Fechas, precios, disponibilidad, imágenes
+- **Campos extensos**: 30+ campos incluyendo:
+  - Información básica (title, description, shortDescription)
+  - Público objetivo (targetAudience) y experiencias
+  - Ubicación completa con características y cómo llegar
+  - Precios escalonados (pricingTiers) con descuentos por fecha
+  - Alimentación detallada (foodInfo)
+  - Políticas y restricciones (policies)
+  - Multimedia (images, heroImageIndex, highlightWords)
+  - SEO (slug auto-generado)
+- **Campos virtuales**: durationDays, availableSpots, computedStatus, effectivePrice, activePricingTier
+- **Validaciones**: Fechas, precios, capacidad, heroImageIndex, enums
 - **Endpoints públicos y protegidos**
 
 #### Entidad Relacionada: Testimonios (Categorías)
 - **Relación con Retiros**: Referencia mediante ObjectId
 - **Populate automático**: Carga información del retiro asociado
 - **CRUD Completo** con aprobación manual
-- **Sistema de tokens** para envío público
+- **Sistema de tokens** para envío público seguro
+- **Campos adicionales**: participantPhoto, token, approvedAt, notes
+- **Campo virtual**: stars (representación visual del rating)
+- **Middleware**: Auto-actualización de approvedAt
 - **Destacados** para mostrar en landing page
 
 #### Entidades Adicionales
-- **Leads**: Gestión de interesados con relación a Retiros
-- **Users**: Administradores con autenticación
-- **Settings**: Configuración global del sitio
-- **TestimonialTokens**: Tokens únicos para envío de testimonios
+- **Leads**: Gestión completa de interesados con:
+  - Relación a Retiros
+  - Estados de lead (nuevo, contactado, interesado, confirmado, descartado)
+  - Estados de pago (pendiente, seña, completo)
+  - Métodos de pago (transferencia, mercadopago, efectivo)
+  - Tipos de interés (reservar, info, consulta)
+  - Fuentes (landing, instagram, facebook, referido, otro)
+  - Campo virtual isConfirmed
+  - Índice único email+retreat
+- **Users**: Administradores con autenticación JWT
+  - Bcrypt con 12 salt rounds
+  - Métodos comparePassword y generateAuthToken
+  - Campo password con select: false
+- **Settings**: Configuración global del sitio (singleton)
+  - Información del facilitador
+  - Redes sociales
+  - Textos personalizables
+  - Tema de colores
+  - Configuración de emails
+- **TestimonialTokens**: Tokens únicos con:
+  - Generación automática con crypto
+  - Expiración de 30 días
+  - TTL index para auto-eliminación
+  - Campos virtuales isExpired e isValid
+  - Métodos estáticos generateForRetreat y validateToken
 
 ### ✅ Separación de Responsabilidades (Arquitectura de Capas)
 
@@ -819,239 +1080,40 @@ const token = await TestimonialToken.findOne({ token: tokenString })
 - ✅ **Sanitización** de datos antes de guardar
 - ✅ **Tokens únicos** con expiración para testimonios
 
-#### Manejo de Errores
-- ✅ **Try-catch** en todos los controladores
-- ✅ **Mensajes descriptivos** de error
-- ✅ **Códigos HTTP apropiados** (200, 201, 400, 401, 404, 500)
-- ✅ **Logging** de errores en servidor
-- ✅ **Feedback visual** de errores en frontend
-
----
-
-## 📄 Licencia
-
-Este proyecto fue desarrollado como parte del Trabajo Práctico de la materia de Desarrollo de Aplicaciones Web.
-
----
-
-**Desarrollado por**: Adrián Cerini  
-**Repositorio**: [GitHub - Soul Experiences](https://github.com/tu-usuario/soul-experiences)  
-**Año**: 2024-2025
+#### Manejo de Errores Centralizado
+- ✅ **AppError**: Clase personalizada de errores con statusCode, code, details, isOperational
+- ✅ **errorHandler**: Middleware centralizado que:
+  - Mapea errores de Mongoose (CastError, ValidationError, E11000)
+  - Mapea errores de JWT (TokenExpiredError, JsonWebTokenError)
+  - Transforma todos los errores a formato uniforme
+  - Oculta detalles sensibles en producción
+- ✅ **Factory methods**: `AppError.badRequest()`, `AppError.unauthorized()`, `AppError.notFound()`, etc.
+- ✅ **Códigos HTTP apropiados**: 200, 201, 400, 401, 404, 409, 422, 500
+- ✅ **Logging condicional**: Verbose en desarrollo, solo errores no operacionales en producción
 
 ---
 
 ## 📚 Recursos Adicionales
 
-El proyecto incluye un **cliente frontend en React** que consume la API. Para más información sobre las funcionalidades del frontend, consultar la documentación en la carpeta `frontend/`.
-
-### Características del Frontend:
-- Landing page con scroll suave entre secciones
-- Panel de administración completo
-- Integración con Cloudinary para gestión de imágenes
-- Diseño responsive con Bootstrap
+### Frontend (Cliente React)
+El proyecto incluye un cliente frontend completo que consume la API:
+- Landing page con scroll suave
+- Panel de administración (CRUD completo)
+- Integración con Cloudinary
 - Autenticación con Context API
+- Diseño responsive con Bootstrap
+
+### Demo y Deployment
+- **Backend (API)**: https://soul-experiences.onrender.com/api
+- **Frontend**: https://clariweb.onrender.com
 
 ---
 
-## 🌐 Demo y Deployment
+## 📄 Licencia y Contacto
 
-**Backend (API)**: https://soul-experiences.onrender.com/api  
-**Frontend**: https://clariweb.onrender.com
+**Desarrollado por**: Adrián Cerini  
+**Repositorio**: [GitHub - Soul Experiences](https://github.com/CeriniA/Soul-Experiences)  
+**Año**: 2024-2025
 
----
-
-## 📞 Contacto
-
-Para consultas sobre el proyecto:
-- **Email**: adriancerini@example.com
-- **GitHub**: [@CeriniA](https://github.com/tu-usuario)
-
----
-
-### 🌐 Funcionalidades del Sitio Público (Landing Page)
-
-#### Hero Section Dinámico
-- **Carrusel automático** de retiros activos y pasados
-- **Selector de imagen hero** personalizable por retiro
-- **Información en tiempo real**: fechas, precios, disponibilidad
-- **Palabras resaltadas** dinámicas según el retiro
-- **Transiciones suaves** cada 5 segundos
-- **Fallback inteligente** a fotos de Clarisa si no hay retiros
-
-#### Sobre Mí (About Section)
-- **Carrusel de fotos** de Clarisa con Swiper
-- **Biografía completa** editable desde admin
-- **Diseño elegante** con tipografía personalizada
-- **CTA** que lleva a sección de retiros
-
-#### Retiros (Descubre tu Brillo)
-- **Fondo dinámico** con imágenes de retiros pasados
-- **Cards de retiros activos** con toda la información
-- **Filtrado automático** por estado
-- **Contador de consultas** al hacer clic en "Reservar"
-- **Vista detallada** de cada retiro en página separada
-
-#### Qué Encontrarás (Services)
-- **3 conceptos principales**: Autoconocimiento, Sanación Emocional, Renovación
-- **8 actividades específicas** con iconos modernos (React Icons)
-- **Efectos hover** interactivos
-- **Grid responsive** adaptable a todos los dispositivos
-- **Ilustraciones SVG** decorativas
-
-#### Testimonios
-- **Testimonios destacados** de la base de datos
-- **Rating con estrellas** visual
-- **Información del retiro** asociado (populate)
-- **Sistema de tokens** para envío público de testimonios
-- **Aprobación manual** desde el admin
-
-#### Contacto
-- **Información real** de contacto
-- **Botones directos** a WhatsApp y Email
-- **Formulario de registro** de leads
-- **Integración con redes sociales**
-
-#### FAQ Section
-- **Preguntas frecuentes** con acordeón
-- **Diseño limpio** y fácil de leer
-- **Animaciones suaves** al expandir/colapsar
-
-### 🔐 Panel de Administración
-
-#### Dashboard
-- **Estadísticas en tiempo real**: leads, retiros, testimonios
-- **Gráficos visuales** de conversión
-- **Accesos rápidos** a todas las secciones
-- **Resumen de actividad** reciente
-
-#### Gestión de Retiros
-- **CRUD completo** con validaciones
-- **Formulario extenso** con todas las secciones:
-  - Información básica
-  - Ubicación con coordenadas
-  - Fechas y precios
-  - Imágenes múltiples con Cloudinary
-  - **Selector de imagen hero** específica
-  - Para quién es el retiro
-  - Experiencias/actividades
-  - Qué incluye/no incluye
-  - Detalles de alimentación y alojamiento
-  - Políticas de cancelación
-- **Vista previa** de cómo se verá en la landing
-- **Guardado manual** con confirmación
-- **Estados**: draft, active, completed, cancelled
-
-#### Gestión de Testimonios
-- **Lista completa** con filtros
-- **Aprobación/rechazo** de testimonios
-- **Marcar como destacados** para landing
-- **Generación de tokens** para envío público
-- **Populate automático** de información del retiro
-- **Edición completa** de testimonios
-
-#### Gestión de Leads
-- **Lista de interesados** con toda la información
-- **Estados**: new, contacted, converted, lost
-- **Filtros** por retiro, estado, fecha
-- **Estadísticas** de conversión
-- **Guardado manual** para evitar actualizaciones accidentales
-- **Información del retiro** asociado
-
-#### Gestión de Tokens
-- **Generar tokens únicos** para testimonios
-- **Enviar por email** a participantes
-- **Fecha de expiración** configurable
-- **Control de uso** (usado/no usado)
-- **Validación automática** en formulario público
-
-#### Configuración del Sitio
-- **Editar "Sobre Mí"**: título, contenido, imágenes
-- **Información de contacto**: email, teléfono, WhatsApp, redes sociales
-- **SEO**: título, descripción, keywords
-- **Actualización en tiempo real** en la landing
-
-### 🎨 Características de Diseño
-
-#### Tipografía
-- **Roca Two**: Títulos elegantes y distintivos
-- **Montserrat**: Texto de cuerpo legible
-
-#### Paleta de Colores
-- **Background**: #f7f5ed (crema cálido)
-- **Text**: #43304a (púrpura oscuro)
-- **Primary**: #ebbe6f (ocre dorado)
-- **Secondary**: #75a6a8 (verde azulado)
-- **Accent**: #81536F (malva)
-
-#### Efectos Visuales
-- **Glassmorphism** en navbar
-- **Animaciones CSS** personalizadas
-- **Transiciones suaves** en todos los elementos
-- **Hover effects** interactivos
-- **Scroll suave** entre secciones
-- **Detección de sección activa** en navbar
-
-#### Responsive Design
-- **Mobile first** approach
-- **Breakpoints optimizados**: 576px, 768px, 992px, 1200px
-- **Grid adaptable** en todas las secciones
-- **Imágenes optimizadas** por tamaño de pantalla
-- **Navbar responsive** con menú hamburguesa
-
-## 🌟 Características Técnicas Destacadas
-
-### Sistema de Imágenes con Cloudinary
-- **Upload directo** desde el navegador con preset unsigned
-- **Selección por botón** con vista previa
-- **Múltiples imágenes** por retiro
-- **Selector de imagen hero** específica para cada retiro
-- **Optimización automática** de calidad y formato
-- **URLs permanentes** y CDN global
-- **Validación** de formatos (JPG, PNG, WebP, GIF) y tamaños (máx 10MB)
-
-### Navegación por Scroll Suave
-- **Single Page Application** con scroll entre secciones
-- **Detección automática** de sección activa en navbar
-- **Offset inteligente** para navbar fijo (80px)
-- **Transiciones suaves** con CSS scroll-behavior
-- **Hash routing** para compartir enlaces a secciones específicas
-
-### Sistema de Tokens para Testimonios
-- **Tokens únicos** generados por retiro
-- **Expiración configurable** para seguridad
-- **Validación automática** antes de mostrar formulario
-- **Control de uso** (un testimonio por token)
-- **Envío por email** a participantes del retiro
-
-### Gestión Inteligente de Estado
-- **Context API** para autenticación global
-- **Custom hooks** para lógica reutilizable
-- **Guardado manual** en formularios para evitar peticiones innecesarias
-- **Indicadores visuales** de cambios sin guardar
-- **Optimistic updates** en algunas operaciones
-
-### Validaciones Robustas
-- **Frontend**: Validación en tiempo real con feedback visual
-- **Backend**: Validaciones con Mongoose y lógica personalizada
-- **Fechas**: Validación de que endDate >= startDate
-- **Imágenes**: Validación de heroImageIndex dentro del rango
-- **Emails**: Formato y unicidad validados
-- **Tokens**: Verificación de expiración y uso
-
-### Performance y Optimización
-- **Lazy loading** de imágenes
-- **Code splitting** con React Router
-- **Vite** para builds ultra-rápidos
-- **MongoDB indexes** en campos frecuentemente consultados
-- **Populate selectivo** para reducir payload
-- **Caché de configuración** del sitio
-
-### Seguridad
-- **JWT** con expiración configurable
-- **bcrypt** con salt rounds para contraseñas
-- **Protected routes** en frontend y backend
-- **CORS** configurado correctamente
-- **Helmet** para headers de seguridad
-- **Variables de entorno** para datos sensibles
-- **Sanitización** de inputs en formularios
+Este proyecto fue desarrollado como parte del Trabajo Práctico de Desarrollo de Aplicaciones Web.
 
