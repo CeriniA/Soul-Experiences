@@ -34,6 +34,112 @@ Soul Experiences es una API RESTful completa desarrollada con Node.js, Express y
 - **Axios** - Cliente HTTP
 - **Bootstrap** v5 - Framework CSS
 
+## 🚀 Cómo Correr el Proyecto
+
+### Prerrequisitos
+
+- **Node.js** v18 o superior
+- **MongoDB** (local o MongoDB Atlas)
+- **npm** o **yarn**
+- **Git**
+
+### Paso 1: Clonar el Repositorio
+
+```bash
+git clone https://github.com/tu-usuario/soul-experiences.git
+cd soul-experiences
+```
+
+### Paso 2: Configurar Variables de Entorno
+
+Crear archivo `.env` en la carpeta `backend/`:
+
+```env
+# Conexión a MongoDB
+MONGODB_URI=mongodb://localhost:27017/clari-retiros
+# O usar MongoDB Atlas:
+# MONGODB_URI=mongodb+srv://usuario:password@cluster.mongodb.net/clari-retiros
+
+# JWT Secret (cambiar por una clave segura)
+JWT_SECRET=mi_clave_secreta_super_segura_123456
+JWT_EXPIRE=30d
+
+# Puerto del servidor
+PORT=5001
+
+# Entorno
+NODE_ENV=development
+
+# CORS - Origen del frontend
+FRONTEND_ORIGIN=http://localhost:3000
+
+# Cookies (desarrollo)
+COOKIE_SAMESITE=lax
+COOKIE_SECURE=false
+
+# Email (opcional - para notificaciones)
+EMAIL_USER=tu_correo@gmail.com
+EMAIL_PASSWORD=tu_app_password
+```
+
+### Paso 3: Instalar Dependencias del Backend
+
+```bash
+cd backend
+npm install
+```
+
+### Paso 4: Ejecutar el Backend
+
+```bash
+# Modo desarrollo (con nodemon)
+npm run dev
+
+# O modo producción
+npm start
+```
+
+El servidor estará corriendo en `http://localhost:5001`
+
+### Paso 5: Instalar y Ejecutar el Frontend (Opcional)
+
+El frontend es un cliente React para consumir la API.
+
+```bash
+cd ../frontend
+npm install
+
+# Crear .env en frontend/
+echo "VITE_API_URL=http://localhost:5001/api" > .env
+
+# Ejecutar
+npm run dev
+```
+
+El frontend estará disponible en `http://localhost:3000`
+
+### Paso 6: Crear Usuario Administrador
+
+Para acceder al panel de administración, crear un usuario admin:
+
+```bash
+# Hacer POST a /api/auth/create-admin
+curl -X POST http://localhost:5001/api/auth/create-admin \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Admin",
+    "email": "admin@soulexperiences.com",
+    "password": "admin123"
+  }'
+```
+
+O usar Postman/Insomnia para hacer la petición.
+
+### Demo y Deployment
+
+- **Backend (API)**: https://soul-experiences.onrender.com/api
+- **Frontend**: https://clariweb.onrender.com
+
 ## 🏗️ Arquitectura del Proyecto
 
 ### Estructura de Directorios (Backend)
