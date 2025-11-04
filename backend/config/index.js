@@ -8,6 +8,16 @@ import logger from '../utils/logger.js';
 // Cargar variables de entorno
 dotenv.config();
 
+const parseOrigins = (value = '') => (
+  value
+    .split(',')
+    .map(origin => origin.trim())
+    .filter(Boolean)
+    .map(origin => origin.replace(/\/$/, ''))
+);
+
+const frontendOrigins = parseOrigins(process.env.FRONTEND_ORIGIN || 'https://clariweb.onrender.com');
+
 /**
  * Objeto de configuración centralizado
  * Agrupa toda la configuración por dominio
@@ -34,7 +44,8 @@ export const config = {
 
   // URLs de la aplicación
   app: {
-    frontendOrigin: process.env.FRONTEND_ORIGIN || 'https://clariweb.onrender.com',
+    frontendOrigins,
+    frontendOrigin: frontendOrigins[0],
     backendOrigin: process.env.BACKEND_ORIGIN || 'https://soul-experiences.onrender.com'
   },
 
@@ -82,7 +93,7 @@ export const validateConfig = () => {
 
   // Warnings para variables opcionales
   const warnings = [];
-  if (!config.app.frontendOrigin) warnings.push('FRONTEND_ORIGIN');
+  if (!config.app.frontendOrigins.length) warnings.push('FRONTEND_ORIGIN');
   if (!config.app.backendOrigin) warnings.push('BACKEND_ORIGIN');
   if (!config.email.host) warnings.push('EMAIL_HOST');
 
@@ -95,6 +106,6 @@ export const validateConfig = () => {
   logger.info(`   - Entorno: ${config.server.env}`);
   logger.info(`   - Puerto: ${config.server.port}`);
   logger.info(`   - Base de datos: ${config.database.uri}`);
-  logger.info(`   - Frontend: ${config.app.frontendOrigin}`);
+  logger.info(`   - Frontend: ${config.app.frontendOrigins.join(', ') || 'N/A'}`);
   logger.info(`   - Backend: ${config.app.backendOrigin}`);
 };

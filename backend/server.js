@@ -85,8 +85,14 @@ app.use(helmet({
   xssFilter: true,
 }));
 // Configurar CORS para cookies (parametrizado)
+const allowedOrigins = config.app.frontendOrigins;
 app.use(cors({
-  origin: config.app.frontendOrigin,
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`Origin not allowed by CORS: ${origin}`));
+  },
   credentials: true,
 }));
 app.use(morgan('combined'));
