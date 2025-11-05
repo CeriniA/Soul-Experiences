@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
-import dotenv from 'dotenv';
 import logger from '../utils/logger.js';
+import { config } from '../config/index.js';
 
 /**
  * Servicio para envío de emails
@@ -33,7 +33,8 @@ class EmailService {
   async sendTestimonialToken(data) {
     const { email, participantName, retreatTitle, token, expiresAt } = data;
 
-    const testimonialUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/testimonio?token=${token}`;
+    const baseFrontendUrl = config.app.frontendOrigin || 'http://localhost:3000';
+    const testimonialUrl = `${baseFrontendUrl}/testimonio?token=${token}`;
     
     const expirationDate = new Date(expiresAt).toLocaleDateString('es-ES', {
       day: 'numeric',
