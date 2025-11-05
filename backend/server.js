@@ -88,6 +88,7 @@ app.use(helmet({
 const allowedOrigins = config.app.frontendOrigins;
 app.use(cors({
   origin: (origin, callback) => {
+    logger.debug(`[CORS] Origin recibido: ${origin || 'NO_ORIGIN_HEADER'}`);
     if (!origin || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
