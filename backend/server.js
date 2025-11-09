@@ -72,7 +72,7 @@ app.use(helmet({
   contentSecurityPolicy: cspConfig,
   crossOriginEmbedderPolicy: { policy: 'require-corp' },
   crossOriginOpenerPolicy: { policy: 'same-origin' },
-  crossOriginResourcePolicy: { policy: 'same-site' },
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
   dnsPrefetchControl: { allow: false },
   // Configuración mejorada de frameguard
   frameguard: { 
