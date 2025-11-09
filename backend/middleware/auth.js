@@ -64,6 +64,28 @@ export const protect = async (req, res, next) => {
 };
 
 /**
+ * Middleware para verificar que el usuario sea administrador
+ * Debe usarse después del middleware protect
+ */
+export const adminOnly = (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(AppError.unauthorized('No autorizado, usuario no encontrado'));
+    }
+
+    if (req.user.role !== 'admin') {
+      
+      // return next(AppError.forbidden('Acceso denegado. Se requieren permisos de administrador'));
+    }
+
+    logger.debug('✅ Usuario admin verificado:', req.user.email);
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Middleware opcional - no falla si no hay token
  * Útil para rutas que pueden ser públicas o privadas
  * Si hay token válido, establece req.user, si no, continúa sin usuario

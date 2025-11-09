@@ -3,6 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Importar configuración
 import { config, validateConfig } from './config/index.js';
@@ -16,6 +18,7 @@ import leadRoutes from './routes/leads.js';
 import testimonialRoutes from './routes/testimonials.js';
 import settingRoutes from './routes/settings.js';
 import tokenRoutes from './routes/tokens.js';
+import uploadRoutes from './routes/uploadRoutes.js';
 
 // Manejo de errores centralizado
 import errorHandler from './middleware/errorHandler.js';
@@ -24,6 +27,10 @@ import logger from './utils/logger.js';
 
 //Borrar esto - Prueba de email
 import emailService from './services/emailService.js';
+
+// Para servir archivos estáticos
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Validar configuración al inicio
 validateConfig();
@@ -101,6 +108,9 @@ app.use(cookieParser()); // Parse cookies antes de las rutas
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Servir archivos estáticos de uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // La función connectDB ahora se importa de config/database.js
 
 // Rutas
@@ -111,6 +121,7 @@ app.use('/api/leads', leadRoutes);
 app.use('/api/testimonials', testimonialRoutes);
 app.use('/api/settings', settingRoutes);
 app.use('/api/tokens', tokenRoutes);
+app.use('/api/uploads', uploadRoutes);
 
 // Ruta de salud
 app.get('/api/health', (req, res) => {
