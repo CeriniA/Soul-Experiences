@@ -53,19 +53,21 @@ export const PAYMENT_METHOD_LABELS = {
   [PAYMENT_METHOD.EFECTIVO]: 'Efectivo'
 };
 
-// Tipos de Interés
+// Tipos de Interés (motivo de consulta)
 export const INTEREST_TYPE = {
-  RESERVAR: 'reservar',
-  INFO: 'info',
-  CONSULTA: 'consulta'
+  RETIROS: 'retiros',
+  MENTORIAS: 'mentorias',
+  EBOOKS: 'ebooks',
+  OTROS: 'otros'
 };
 
 export const INTEREST_TYPE_ARRAY = Object.values(INTEREST_TYPE);
 
 export const INTEREST_TYPE_LABELS = {
-  [INTEREST_TYPE.RESERVAR]: 'Reservar',
-  [INTEREST_TYPE.INFO]: 'Información',
-  [INTEREST_TYPE.CONSULTA]: 'Consulta'
+  [INTEREST_TYPE.RETIROS]: 'Retiros',
+  [INTEREST_TYPE.MENTORIAS]: 'Mentorías',
+  [INTEREST_TYPE.EBOOKS]: 'Ebooks',
+  [INTEREST_TYPE.OTROS]: 'Otros'
 };
 
 // Fuentes de Lead

@@ -40,7 +40,7 @@ const leadSchema = new mongoose.Schema({
   interest: {
     type: String,
     enum: INTEREST_TYPE_ARRAY,
-    default: 'consulta'
+    default: 'retiros'
   },
   
   // Estado del lead
@@ -74,7 +74,7 @@ const leadSchema = new mongoose.Schema({
   retreat: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Retreat',
-    required: [true, 'El retiro es requerido']
+    required: false
   },
   
   // Notas internas

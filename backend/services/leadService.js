@@ -130,40 +130,49 @@ class LeadService {
    */
   async createLead(leadData) {
     try {
-      // Verificar que el retiro existe y está activo
-      const retreat = await Retreat.findOne({
-        _id: leadData.retreat,
-        status: 'active'
-      });
-
-      if (!retreat) {
-        throw AppError.badRequest('Retiro no disponible');
+      // Normalizar retreat: si viene vacío (""), tratarlo como undefined/null
+      if (!leadData.retreat) {
+        delete leadData.retreat;
       }
 
-      // Verificar disponibilidad
-      const confirmedCount = await this.getConfirmedParticipantsCount(leadData.retreat);
-      if (confirmedCount >= retreat.maxParticipants) {
-        throw AppError.badRequest('El retiro está completo. No hay lugares disponibles.');
-      }
+      // Si se proporcionó un retiro, aplicar la lógica actual de validación
+      if (leadData.retreat) {
+        const retreat = await Retreat.findOne({
+          _id: leadData.retreat,
+          status: 'active'
+        });
 
-      // Verificar si ya existe un lead con este email para este retiro
-      const existingLead = await Lead.findOne({ 
-        email: leadData.email, 
-        retreat: leadData.retreat 
-      });
-      
-      if (existingLead) {
-        throw AppError.badRequest('Ya existe una consulta con este email para este retiro');
+        if (!retreat) {
+          throw AppError.badRequest('Retiro no disponible');
+        }
+
+        // Verificar disponibilidad
+        const confirmedCount = await this.getConfirmedParticipantsCount(leadData.retreat);
+        if (confirmedCount >= retreat.maxParticipants) {
+          throw AppError.badRequest('El retiro está completo. No hay lugares disponibles.');
+        }
+
+        // Verificar si ya existe un lead con este email para este retiro
+        const existingLead = await Lead.findOne({ 
+          email: leadData.email, 
+          retreat: leadData.retreat 
+        });
+        
+        if (existingLead) {
+          throw AppError.badRequest('Ya existe una consulta con este email para este retiro');
+        }
       }
 
       const lead = await Lead.create({
         ...leadData,
-        interest: leadData.interest || 'consulta',
+        interest: leadData.interest || 'retiros',
         source: leadData.source || 'landing'
       });
 
-      // Poblar datos del retiro para la respuesta
-      await lead.populate('retreat', 'title startDate endDate price');
+      // Poblar datos del retiro para la respuesta (si existe)
+      if (lead.retreat) {
+        await lead.populate('retreat', 'title startDate endDate price');
+      }
 
       return {
         success: true,
